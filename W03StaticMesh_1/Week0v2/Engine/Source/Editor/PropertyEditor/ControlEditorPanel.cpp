@@ -359,8 +359,7 @@ void ControlEditorPanel::CreateModifyButton(ImVec2 ButtonSize, ImFont* IconFont)
                     for (int z = 0; z < appleCountZ; ++z)
                     {
                         AStaticMeshActor* StaticMeshActor = World->SpawnActor<AStaticMeshActor>();
-                        std::string AppleActorName = "Apple(" + std::to_string(x) + ", " + std::to_string(y) + ", " + std::to_string(z) + ")";
-                        StaticMeshActor->SetActorLabel(AppleActorName);
+                    
                         FVector offset(x * appleSpacing, y * appleSpacing, z * appleSpacing);
                         StaticMeshActor->GetRootComponent()->SetLocation(offset);
 
