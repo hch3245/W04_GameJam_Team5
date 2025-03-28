@@ -17,6 +17,8 @@
 #include "Runtime/Engine/Classes/Engine/StaticMeshActor.h"
 #include "Runtime/Engine/Classes/Engine/FLoaderOBJ.h"
 
+#include "UnrealEd/EditorViewportClient.h"
+#include "LevelEditor/SLevelEditor.h"
 using json = nlohmann::json;
 
 SceneData FSceneMgr::ParseSceneData(const FString& jsonStr)
@@ -257,23 +259,28 @@ void FSceneMgr::SpawnActorFromSceneData(const FString& jsonStr)
         // 현재는 카메라 1개를 상정하여 World->camera에 해당 값을 바로 전달하겠음
         // 이후 카메라 여러개가 되는 거 할거면 코드 개선해야 하옵니다
 
-        auto perspectiveCamera = j["PerspectiveCamera"];
-        for (auto it = perspectiveCamera.begin(); it != perspectiveCamera.end(); ++it) {
-            int id = std::stoi(it.key());  // Key는 문자열, 숫자로 변환
-            const json& value = it.value();
-            UCameraComponent* camera = World->GetCamera();
-            if (value.contains("Location")) camera->SetLocation(FVector(value["Location"].get<std::vector<float>>()[0],
-                value["Location"].get<std::vector<float>>()[1],
-                value["Location"].get<std::vector<float>>()[2]));
-            if (value.contains("Rotation")) camera->SetRotation(FVector(value["Rotation"].get<std::vector<float>>()[0],
-                value["Rotation"].get<std::vector<float>>()[1],
-                value["Rotation"].get<std::vector<float>>()[2]));
-            if (value.contains("Rotation")) camera->SetRotation(FVector(value["Rotation"].get<std::vector<float>>()[0],
-                value["Rotation"].get<std::vector<float>>()[1],
-                value["Rotation"].get<std::vector<float>>()[2]));
-            if (value.contains("FOV")) camera->SetFOV(value["FOV"].get<float>());
-            if (value.contains("NearClip")) camera->SetNearClip(value["NearClip"].get<float>());
-            if (value.contains("FarClip")) camera->SetNearClip(value["FarClip"].get<float>());
+        const json& cameraJson = j["PerspectiveCamera"];
+        auto ActiveViewportClient = GEngineLoop.GetLevelEditor()->GetActiveViewportClient();
+        if (cameraJson.contains("Location")) {
+            const auto& loc = cameraJson["Location"];
+            ActiveViewportClient->ViewTransformPerspective.ViewLocation.x = loc[0];
+            ActiveViewportClient->ViewTransformPerspective.ViewLocation.y = loc[1];
+            ActiveViewportClient->ViewTransformPerspective.ViewLocation.z = loc[2];
+        }
+        if (cameraJson.contains("Rotation")) {
+            const auto& rot = cameraJson["Rotation"];
+            ActiveViewportClient->ViewTransformPerspective.ViewRotation.x = rot[0];
+            ActiveViewportClient->ViewTransformPerspective.ViewRotation.y = rot[1];
+            ActiveViewportClient->ViewTransformPerspective.ViewRotation.z = rot[2];
+        }
+        if (cameraJson.contains("FOV")) {
+            ActiveViewportClient->ViewFOV = cameraJson["FOV"][0];
+        }
+        if (cameraJson.contains("NearClip")) {
+            ActiveViewportClient->nearPlane = cameraJson["NearClip"][0];
+        }
+        if (cameraJson.contains("FarClip")) {
+            ActiveViewportClient->farPlane = cameraJson["FarClip"][0];
         }
     }
     catch (const std::exception& e) {
