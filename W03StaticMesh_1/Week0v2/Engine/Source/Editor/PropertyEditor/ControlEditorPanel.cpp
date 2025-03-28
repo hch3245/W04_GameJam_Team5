@@ -351,7 +351,7 @@ void ControlEditorPanel::CreateModifyButton(ImVec2 ButtonSize, ImFont* IconFont)
         UWorld* World = GEngineLoop.GetWorld();
         
         if (ImGui::Button("Make Apple!")) {
-
+            FManagerOBJ::CreateStaticMesh("Data/apple_mid.obj");
             for (int x = 0; x < appleCountX; ++x)
             {
                 for (int y = 0; y < appleCountY; ++y)
@@ -365,7 +365,7 @@ void ControlEditorPanel::CreateModifyButton(ImVec2 ButtonSize, ImFont* IconFont)
                         StaticMeshActor->GetRootComponent()->SetLocation(offset);
 
                         UStaticMeshComponent* MeshComp = StaticMeshActor->GetStaticMeshComponent();
-                        FManagerOBJ::CreateStaticMesh("Data/apple_mid.obj");
+                       
                         MeshComp->SetStaticMesh(FManagerOBJ::GetStaticMesh(L"apple_mid.obj"));
                     }
                 }
