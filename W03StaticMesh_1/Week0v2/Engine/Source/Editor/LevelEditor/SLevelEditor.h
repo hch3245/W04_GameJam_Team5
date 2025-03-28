@@ -32,7 +32,7 @@ private:
     bool bLButtonDown = false;
     bool bRButtonDown = false;
     
-    bool bMultiViewportMode;
+    bool bMultiViewportMode = false;
 
     POINT lastMousePos;
     float EditorWidth;
