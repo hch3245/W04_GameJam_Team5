@@ -1,4 +1,4 @@
-﻿#include "ControlEditorPanel.h"
+#include "ControlEditorPanel.h"
 
 #include "World.h"
 #include "Actors/Player.h"
@@ -14,6 +14,8 @@
 #include "tinyfiledialogs/tinyfiledialogs.h"
 #include "UnrealEd/EditorViewportClient.h"
 #include "PropertyEditor/ShowFlags.h"
+
+#include "UnrealEd/SceneMgr.h"
 
 void ControlEditorPanel::Render()
 {
@@ -100,6 +102,14 @@ void ControlEditorPanel::CreateMenuButton(ImVec2 ButtonSize, ImFont* IconFont)
             if (FileName == nullptr)
             {
                 tinyfd_messageBox("Error", "파일을 불러올 수 없습니다.", "ok", "error", 1);
+                ImGui::End();
+                return;
+            }
+            else {
+                tinyfd_messageBox("Success", "파일을 확인했습니다. 불러오겠습니다.", "ok", "info", 1);
+                // TODO: Load Scene
+                FSceneMgr::SpawnActorFromSceneData(FSceneMgr::LoadSceneFromFile(FileName));
+
                 ImGui::End();
                 return;
             }

@@ -12,6 +12,11 @@
 #include "Camera/CameraComponent.h"
 #include "UObject/Casts.h"
 
+#include "World.h"
+#include "GameFramework/Actor.h"
+#include "Runtime/Engine/Classes/Engine/StaticMeshActor.h"
+#include "Runtime/Engine/Classes/Engine/FLoaderOBJ.h"
+
 using json = nlohmann::json;
 
 SceneData FSceneMgr::ParseSceneData(const FString& jsonStr)
@@ -117,6 +122,180 @@ SceneData FSceneMgr::ParseSceneData(const FString& jsonStr)
     }
 
     return sceneData;
+}
+
+void FSceneMgr::SpawnActorFromSceneData(const FString& jsonStr)
+{
+    try {
+        json j = json::parse(*jsonStr);
+
+        UWorld* World = GEngineLoop.GetWorld();
+
+        // Primitives 처리 (C++14 스타일)
+        auto primitives = j["Primitives"];
+        for (auto it = primitives.begin(); it != primitives.end(); ++it) {
+            int id = std::stoi(it.key());  // Key는 문자열, 숫자로 변환
+            const json& value = it.value();
+            UObject* obj = nullptr;
+            AActor* SpawnedActor = nullptr;
+            AStaticMeshActor* StaticMeshActor = nullptr;
+
+            if (value.contains("Type"))
+            {
+                const FString TypeName = value["Type"].get<std::string>();
+                if (TypeName == USphereComp::StaticClass()->GetName())
+                {
+                    SpawnedActor = World->SpawnActor<AActor>();
+                    SpawnedActor->SetActorLabel(TEXT(std::to_string(id) + "(OBJ_SPHERE)"));
+                    SpawnedActor->AddComponent<USphereComp>();
+
+                    //obj = FObjectFactory::ConstructObject<USphereComp>();
+                }
+                else if (TypeName == UCubeComp::StaticClass()->GetName())
+                {
+                    SpawnedActor = World->SpawnActor<AActor>();
+                    SpawnedActor->SetActorLabel(TEXT(std::to_string(id) + "(OBJ_CUBE)"));
+                    SpawnedActor->AddComponent<UCubeComp>();
+
+                    //obj = FObjectFactory::ConstructObject<UCubeComp>();
+                }
+                else if (TypeName == UGizmoArrowComponent::StaticClass()->GetName())
+                {
+                    // 일단 AActor로 Spawn, 이후 수정 필요할 수 있음
+                    SpawnedActor = World->SpawnActor<AActor>();
+                    SpawnedActor->SetActorLabel(TEXT(std::to_string(id) + "(OBJ_GIZMO)"));
+                    SpawnedActor->AddComponent<UGizmoArrowComponent>();
+
+                    //obj = FObjectFactory::ConstructObject<UGizmoArrowComponent>();
+                }
+                else if (TypeName == UBillboardComponent::StaticClass()->GetName())
+                {
+                    // 일단 AActor로 Spawn, 이후 수정 필요할 수 있음
+                    SpawnedActor = World->SpawnActor<AActor>();
+                    SpawnedActor->SetActorLabel(TEXT(std::to_string(id) + "(OBJ_BILLBOARD)"));
+                    SpawnedActor->AddComponent<UBillboardComponent>();
+
+                    //obj = FObjectFactory::ConstructObject<UBillboardComponent>();
+                }
+                else if (TypeName == ULightComponentBase::StaticClass()->GetName())
+                {
+                    // 일단 AActor로 Spawn, 이후 수정 필요할 수 있음
+                    SpawnedActor = World->SpawnActor<AActor>();
+                    SpawnedActor->SetActorLabel(TEXT(std::to_string(id) + "(OBJ_LIGHT)"));
+                    SpawnedActor->AddComponent<ULightComponentBase>();
+
+                    obj = FObjectFactory::ConstructObject<ULightComponentBase>();
+                }
+                else if (TypeName == USkySphereComponent::StaticClass()->GetName())
+                {
+                    // 일단 AActor로 Spawn, 이후 수정 필요할 수 있음
+                    SpawnedActor = World->SpawnActor<AActor>();
+                    SpawnedActor->SetActorLabel(TEXT(std::to_string(id) + "(OBJ_SKYSPHERE)"));
+                    SpawnedActor->AddComponent<USkySphereComponent>();
+
+                    obj = FObjectFactory::ConstructObject<USkySphereComponent>();
+                    USkySphereComponent* skySphere = static_cast<USkySphereComponent*>(obj);
+                }
+                else if (TypeName == "StaticMeshComp") {
+                    // StaticMesh를 쓰는 경우, AStaticMeshActor 을 생성해주어야 함
+                    StaticMeshActor = World->SpawnActor<AStaticMeshActor>();
+                    StaticMeshActor->SetActorLabel(TEXT(std::to_string(id) + "(OBJ_STATICMESH"));
+                }
+            }
+
+            USceneComponent* sceneComp = nullptr;
+            if (StaticMeshActor != nullptr) {
+                sceneComp = StaticMeshActor->GetRootComponent();
+            }
+            else if (SpawnedActor != nullptr) {
+                sceneComp = SpawnedActor->GetRootComponent();
+            }
+
+            if (sceneComp != nullptr) {
+                if (value.contains("Location")) sceneComp->SetLocation(FVector(value["Location"].get<std::vector<float>>()[0],
+                    value["Location"].get<std::vector<float>>()[1],
+                    value["Location"].get<std::vector<float>>()[2]));
+                if (value.contains("Rotation")) sceneComp->SetRotation(FVector(value["Rotation"].get<std::vector<float>>()[0],
+                    value["Rotation"].get<std::vector<float>>()[1],
+                    value["Rotation"].get<std::vector<float>>()[2]));
+                if (value.contains("Scale")) sceneComp->SetScale(FVector(value["Scale"].get<std::vector<float>>()[0],
+                    value["Scale"].get<std::vector<float>>()[1],
+                    value["Scale"].get<std::vector<float>>()[2]));
+                if (value.contains("Type")) {
+                    UPrimitiveComponent* primitiveComp = Cast<UPrimitiveComponent>(sceneComp);
+                    if (primitiveComp) {
+                        primitiveComp->SetType(value["Type"].get<std::string>());
+                    }
+                    else {
+                        std::string name = value["Type"].get<std::string>();
+                        sceneComp->NamePrivate = name.c_str();
+                    }
+                }
+            }
+            else {
+                UE_LOG(LogLevel::Error, "No SceneComponent! in SceneMgr");
+            }
+
+            if (StaticMeshActor != nullptr) {
+                if (value.contains("ObjStaticMeshAsset"))
+                {
+                    //Todo : 여기다가 Obj Maeh저장후 일기
+                //if (value.contains("ObjStaticMeshAsset"))
+                    const FString staticMeshPath = value["ObjStaticMeshAsset"].get<std::string>();
+                    UStaticMeshComponent* MeshComp = StaticMeshActor->GetStaticMeshComponent();
+                    FManagerOBJ::CreateStaticMesh(staticMeshPath);
+
+                    FString staticMeshName = GetFileNameFromPath(staticMeshPath);
+                    auto wStaticMeshName = staticMeshName.ToWideString();
+                    MeshComp->SetStaticMesh(FManagerOBJ::GetStaticMesh(wStaticMeshName));
+                }
+            }
+
+        }
+
+        // 카메라 Spawn
+        // 현재는 카메라 1개를 상정하여 World->camera에 해당 값을 바로 전달하겠음
+        // 이후 카메라 여러개가 되는 거 할거면 코드 개선해야 하옵니다
+
+        auto perspectiveCamera = j["PerspectiveCamera"];
+        for (auto it = perspectiveCamera.begin(); it != perspectiveCamera.end(); ++it) {
+            int id = std::stoi(it.key());  // Key는 문자열, 숫자로 변환
+            const json& value = it.value();
+            UCameraComponent* camera = World->GetCamera();
+            if (value.contains("Location")) camera->SetLocation(FVector(value["Location"].get<std::vector<float>>()[0],
+                value["Location"].get<std::vector<float>>()[1],
+                value["Location"].get<std::vector<float>>()[2]));
+            if (value.contains("Rotation")) camera->SetRotation(FVector(value["Rotation"].get<std::vector<float>>()[0],
+                value["Rotation"].get<std::vector<float>>()[1],
+                value["Rotation"].get<std::vector<float>>()[2]));
+            if (value.contains("Rotation")) camera->SetRotation(FVector(value["Rotation"].get<std::vector<float>>()[0],
+                value["Rotation"].get<std::vector<float>>()[1],
+                value["Rotation"].get<std::vector<float>>()[2]));
+            if (value.contains("FOV")) camera->SetFOV(value["FOV"].get<float>());
+            if (value.contains("NearClip")) camera->SetNearClip(value["NearClip"].get<float>());
+            if (value.contains("FarClip")) camera->SetNearClip(value["FarClip"].get<float>());
+        }
+    }
+    catch (const std::exception& e) {
+        FString errorMessage = "Error parsing JSON: ";
+        errorMessage += e.what();
+
+        UE_LOG(LogLevel::Error, "No Json file");
+    }
+}
+
+std::string FSceneMgr::GetFileNameFromPath(const FString& Path)
+{
+    std::string path = GetData(Path);
+    // 경로에서 마지막 '\' 또는 '/'의 위치를 찾습니다.
+    size_t pos = path.find_last_of("\\/");
+    if (pos != std::string::npos)
+    {
+        // 슬래시 다음부터 끝까지 반환
+        return path.substr(pos + 1);
+    }
+    // 슬래시가 없으면 전체 문자열이 파일 이름으로 간주됩니다.
+    return path;
 }
 
 FString FSceneMgr::LoadSceneFromFile(const FString& filename)
