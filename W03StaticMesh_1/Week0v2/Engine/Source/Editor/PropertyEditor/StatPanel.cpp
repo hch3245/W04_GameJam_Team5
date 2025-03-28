@@ -23,7 +23,7 @@ void StatPanel::Draw()
     float controllWindowHeight = static_cast<float>(height) * 0.05f;
 
     float controllWindowPosX = 50.0f;
-    float controllWindowPosY = 10.0f;
+    float controllWindowPosY = 50.0f;
 
     // 창 크기와 위치 설정
     ImGui::SetNextWindowPos(ImVec2(controllWindowPosX, controllWindowPosY));
