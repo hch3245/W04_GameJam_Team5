@@ -17,7 +17,7 @@ class AEditorPlayer : public AActor
 
     void Input();
     bool PickGizmo(FVector& rayOrigin);
-    void PickActor(const FVector& pickPosition);
+    bool PickActor(const FVector& pickPosition);
     void AddControlMode();
     void AddCoordiMode();
 
@@ -40,4 +40,8 @@ public:
     void SetMode(ControlMode _Mode) { cMode = _Mode; }
     ControlMode GetControlMode() const { return cMode; }
     CoordiMode GetCoordiMode() const { return cdMode; }
+
+    int32 PickAttemps = 0;
+    double PickingTime = 0;
+    double AccumulatedTime = 0;
 };

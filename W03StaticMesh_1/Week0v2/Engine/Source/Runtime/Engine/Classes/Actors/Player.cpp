@@ -1,4 +1,4 @@
-﻿#include "Player.h"
+#include "Player.h"
 
 #include "UnrealClient.h"
 #include "World.h"
@@ -14,6 +14,8 @@
 #include "PropertyEditor/ShowFlags.h"
 #include "UnrealEd/EditorViewportClient.h"
 #include "UObject/UObjectIterator.h"
+#include "EngineLoop.h"
+#include <WindowsPlatformTime.h>
 
 
 using namespace DirectX;
@@ -44,6 +46,12 @@ void AEditorPlayer::Input()
 
             uint32 UUID = GetEngine().graphicDevice.GetPixelUUID(mousePos);
             // TArray<UObject*> objectArr = GetWorld()->GetObjectArr();
+            
+            
+            TStatId StatId;
+            FScopeCycleCounter pickCounter(StatId);  // 성능 추적 시작
+   
+
             for ( const auto obj : TObjectRange<USceneComponent>())
             {
                 if (obj->GetUUID() != UUID) continue;
@@ -57,7 +65,25 @@ void AEditorPlayer::Input()
             const auto& ActiveViewport = GetEngine().GetLevelEditor()->GetActiveViewportClient();
             ScreenToViewSpace(mousePos.x, mousePos.y, ActiveViewport->GetViewMatrix(), ActiveViewport->GetProjectionMatrix(), pickPosition);
             bool res = PickGizmo(pickPosition);
-            if (!res) PickActor(pickPosition);
+            if (!res)
+            {
+                bool isSuceed= PickActor(pickPosition);
+
+
+                if (isSuceed)
+                {
+                    PickingTime = FPlatformTime::ToMilliseconds(pickCounter.Finish());
+                    AccumulatedTime += PickingTime;
+                    PickAttemps += 1;
+                    // 7) 성능 시간 출력
+                    UE_LOG(LogLevel::Display, TEXT("Picking Time %.3f ms Num Attempts %d Accumulated Time %.3f ms "), PickingTime, PickAttemps, AccumulatedTime);
+                }
+
+            }
+            
+       
+            
+           
         }
         else
         {
@@ -218,9 +244,11 @@ bool AEditorPlayer::PickGizmo(FVector& pickPosition)
     return isPickedGizmo;
 }
 
-void AEditorPlayer::PickActor(const FVector& pickPosition)
+bool AEditorPlayer::PickActor(const FVector& pickPosition)
 {
-    if (!(ShowFlags::GetInstance().currentFlags & EEngineShowFlags::SF_Primitives)) return;
+    
+
+    if (!(ShowFlags::GetInstance().currentFlags & EEngineShowFlags::SF_Primitives)) return false;
 
     const UActorComponent* Possible = nullptr;
     int maxIntersect = 0;
@@ -260,7 +288,10 @@ void AEditorPlayer::PickActor(const FVector& pickPosition)
     if (Possible)
     {
         GetWorld()->SetPickedActor(Possible->GetOwner());
+        return true;
     }
+    else
+        return false;
 }
 
 void AEditorPlayer::AddControlMode()
