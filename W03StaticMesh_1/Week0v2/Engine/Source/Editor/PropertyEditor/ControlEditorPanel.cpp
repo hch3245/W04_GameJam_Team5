@@ -16,6 +16,7 @@
 #include "PropertyEditor/ShowFlags.h"
 
 #include "UnrealEd/SceneMgr.h"
+#include "World.h"
 
 void ControlEditorPanel::Render()
 {
@@ -326,6 +327,47 @@ void ControlEditorPanel::CreateModifyButton(ImVec2 ButtonSize, ImFont* IconFont)
                 if (SpawnedActor)
                 {
                     World->SetPickedActor(SpawnedActor);
+                }
+            }
+        }
+        ImGui::EndPopup();
+    }
+
+    ImGui::SameLine();
+
+    if (ImGui::Button("Apple Maker"))
+    {
+        ImGui::OpenPopup("AppleMakerControl");
+    }
+
+    if (ImGui::BeginPopup("AppleMakerControl"))
+    {
+        ImGui::Text("AppleMaker");
+        ImGui::InputInt("countX", &appleCountX);
+        ImGui::InputInt("countY", &appleCountY);
+        ImGui::InputInt("countZ", &appleCountZ);
+        ImGui::InputFloat("spacing", &appleSpacing);
+
+        UWorld* World = GEngineLoop.GetWorld();
+        
+        if (ImGui::Button("Make Apple!")) {
+
+            for (int x = 0; x < appleCountX; ++x)
+            {
+                for (int y = 0; y < appleCountY; ++y)
+                {
+                    for (int z = 0; z < appleCountZ; ++z)
+                    {
+                        AStaticMeshActor* StaticMeshActor = World->SpawnActor<AStaticMeshActor>();
+                        std::string AppleActorName = "Apple(" + std::to_string(x) + ", " + std::to_string(y) + ", " + std::to_string(z) + ")";
+                        StaticMeshActor->SetActorLabel(AppleActorName);
+                        FVector offset(x * appleSpacing, y * appleSpacing, z * appleSpacing);
+                        StaticMeshActor->GetRootComponent()->SetLocation(offset);
+
+                        UStaticMeshComponent* MeshComp = StaticMeshActor->GetStaticMeshComponent();
+                        FManagerOBJ::CreateStaticMesh("Data/apple_mid.obj");
+                        MeshComp->SetStaticMesh(FManagerOBJ::GetStaticMesh(L"apple_mid.obj"));
+                    }
                 }
             }
         }

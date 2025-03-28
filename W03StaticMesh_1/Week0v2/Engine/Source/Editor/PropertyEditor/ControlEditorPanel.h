@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "Components/ActorComponent.h"
 #include "UnrealEd/EditorPanel.h"
 
@@ -24,5 +24,10 @@ private:
     float* FOV = nullptr;
     float CameraSpeed = 0.0f;
     float GridScale = 1.0f;
+
+    int appleCountX = 1;
+    int appleCountY = 1;
+    int appleCountZ = 1;
+    float appleSpacing = 1.0f;
 };
 
