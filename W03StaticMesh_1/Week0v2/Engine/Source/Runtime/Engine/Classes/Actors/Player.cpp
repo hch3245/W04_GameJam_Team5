@@ -19,8 +19,6 @@
 #include "Core/Math/Octree.h"
 #include "Engine/Classes/Engine/StaticMeshActor.h"
 
-using namespace DirectX;
-
 AEditorPlayer::AEditorPlayer()
 {
 }

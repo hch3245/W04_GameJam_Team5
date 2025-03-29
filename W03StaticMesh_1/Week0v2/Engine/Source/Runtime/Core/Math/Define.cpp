@@ -1,57 +1,75 @@
 #include "Define.h"
 
 // 단위 행렬 정의
-const FMatrix FMatrix::Identity = { {
-    {1, 0, 0, 0},
-    {0, 1, 0, 0},
-    {0, 0, 1, 0},
-    {0, 0, 0, 1}
-} };
+const FMatrix FMatrix::Identity = {
+    _mm_setr_ps(1.0f, 0.0f, 0.0f, 0.0f),
+    _mm_setr_ps(0.0f, 1.0f, 0.0f, 0.0f),
+    _mm_setr_ps(0.0f, 0.0f, 1.0f, 0.0f),
+    _mm_setr_ps(0.0f, 0.0f, 0.0f, 1.0f) 
+};
 
 // 행렬 덧셈
 FMatrix FMatrix::operator+(const FMatrix& Other) const {
-    FMatrix Result;
-    for (int32 i = 0; i < 4; i++)
-        for (int32 j = 0; j < 4; j++)
-            Result.M[i][j] = M[i][j] + Other.M[i][j];
-    return Result;
+    FMatrix result;
+    result.r[0] = _mm_add_ps(r[0], Other.r[0]);
+    result.r[1] = _mm_add_ps(r[1], Other.r[1]);
+    result.r[2] = _mm_add_ps(r[2], Other.r[2]);
+    result.r[3] = _mm_add_ps(r[3], Other.r[3]);
+    return result;
 }
 
 // 행렬 뺄셈
 FMatrix FMatrix::operator-(const FMatrix& Other) const {
-    FMatrix Result;
-    for (int32 i = 0; i < 4; i++)
-        for (int32 j = 0; j < 4; j++)
-            Result.M[i][j] = M[i][j] - Other.M[i][j];
-    return Result;
+    FMatrix result;
+    result.r[0] = _mm_sub_ps(r[0], Other.r[0]);
+    result.r[1] = _mm_sub_ps(r[1], Other.r[1]);
+    result.r[2] = _mm_sub_ps(r[2], Other.r[2]);
+    result.r[3] = _mm_sub_ps(r[3], Other.r[3]);
+    return result;
 }
 
 // 행렬 곱셈
 FMatrix FMatrix::operator*(const FMatrix& Other) const {
-    FMatrix Result = {};
-    for (int32 i = 0; i < 4; i++)
-        for (int32 j = 0; j < 4; j++)
-            for (int32 k = 0; k < 4; k++)
-                Result.M[i][j] += M[i][k] * Other.M[k][j];
-    return Result;
+    FMatrix result;
+
+    for (int i = 0; i < 4; ++i) {
+        __m128 row = r[i];
+        result.r[i] = _mm_add_ps(
+            _mm_add_ps(
+                _mm_mul_ps(_mm_shuffle_ps(row, row, _MM_SHUFFLE(0, 0, 0, 0)), Other.r[0]),
+                _mm_mul_ps(_mm_shuffle_ps(row, row, _MM_SHUFFLE(1, 1, 1, 1)), Other.r[1])
+            ),
+            _mm_add_ps(
+                _mm_mul_ps(_mm_shuffle_ps(row, row, _MM_SHUFFLE(2, 2, 2, 2)), Other.r[2]),
+                _mm_mul_ps(_mm_shuffle_ps(row, row, _MM_SHUFFLE(3, 3, 3, 3)), Other.r[3])
+            )
+        );
+    }
+    return result;
 }
 
 // 스칼라 곱셈
 FMatrix FMatrix::operator*(float Scalar) const {
-    FMatrix Result;
-    for (int32 i = 0; i < 4; i++)
-        for (int32 j = 0; j < 4; j++)
-            Result.M[i][j] = M[i][j] * Scalar;
-    return Result;
+    FMatrix result;
+    __m128 scalarVector = _mm_set_ps(Scalar, Scalar, Scalar, Scalar);
+
+    result.r[0] = _mm_mul_ps(r[0], scalarVector);
+    result.r[1] = _mm_mul_ps(r[1], scalarVector);
+    result.r[2] = _mm_mul_ps(r[2], scalarVector);
+    result.r[3] = _mm_mul_ps(r[3], scalarVector);
+    return result;
 }
 
-// 스칼라 나눗셈
 FMatrix FMatrix::operator/(float Scalar) const {
-    FMatrix Result;
-    for (int32 i = 0; i < 4; i++)
-        for (int32 j = 0; j < 4; j++)
-            Result.M[i][j] = M[i][j] / Scalar;
-    return Result;
+    FMatrix result;
+    __m128 scalarVec = _mm_set1_ps(1.0f / Scalar);
+
+    result.r[0] = _mm_mul_ps(r[0], scalarVec);
+    result.r[1] = _mm_mul_ps(r[1], scalarVec);
+    result.r[2] = _mm_mul_ps(r[2], scalarVec);
+    result.r[3] = _mm_mul_ps(r[3], scalarVec);
+
+    return result;
 }
 
 float* FMatrix::operator[](int row) {
@@ -65,11 +83,9 @@ const float* FMatrix::operator[](int row) const
 
 // 전치 행렬
 FMatrix FMatrix::Transpose(const FMatrix& Mat) {
-    FMatrix Result;
-    for (int32 i = 0; i < 4; i++)
-        for (int32 j = 0; j < 4; j++)
-            Result.M[i][j] = Mat.M[j][i];
-    return Result;
+    FMatrix result = Mat;
+    _MM_TRANSPOSE4_PS(result.r[0], result.r[1], result.r[2], result.r[3]);
+    return result;
 }
 
 // 행렬식 계산 (라플라스 전개, 4x4 행렬)
@@ -94,123 +110,142 @@ float FMatrix::Determinant(const FMatrix& Mat) {
     return det;
 }
 
-// 역행렬 (가우스-조던 소거법)
+// LU분해 방식으로 변경
 FMatrix FMatrix::Inverse(const FMatrix& Mat) {
-    float det = Determinant(Mat);
-    if (fabs(det) < 1e-6) {
-        return Identity;
-    }
+    // Step 1: LU Decomposition
+    FMatrix L = Identity; // Lower triangular matrix
+    FMatrix U = Mat;      // Upper triangular matrix
 
-    FMatrix Inv;
-    float invDet = 1.0f / det;
+    for (int i = 0; i < 4; ++i) {
+        // Normalize the pivot row in U
+        __m128 pivot = _mm_set1_ps(U.M[i][i]);
+        U.r[i] = _mm_div_ps(U.r[i], pivot);
 
-    // 여인수 행렬 계산 후 전치하여 역행렬 계산
-    for (int32 i = 0; i < 4; i++) {
-        for (int32 j = 0; j < 4; j++) {
-            float subMat[3][3];
-            int32 subRow = 0;
-            for (int32 r = 0; r < 4; r++) {
-                if (r == i) continue;
-                int32 subCol = 0;
-                for (int32 c = 0; c < 4; c++) {
-                    if (c == j) continue;
-                    subMat[subRow][subCol] = Mat.M[r][c];
-                    subCol++;
-                }
-                subRow++;
-            }
-            float minorDet =
-                subMat[0][0] * (subMat[1][1] * subMat[2][2] - subMat[1][2] * subMat[2][1]) -
-                subMat[0][1] * (subMat[1][0] * subMat[2][2] - subMat[1][2] * subMat[2][0]) +
-                subMat[0][2] * (subMat[1][0] * subMat[2][1] - subMat[1][1] * subMat[2][0]);
+        // Update rows below the pivot in L and U
+        for (int j = i + 1; j < 4; ++j) {
+            float factor = U.M[j][i];
+            L.M[j][i] = factor;
 
-            Inv.M[j][i] = ((i + j) % 2 == 0 ? 1 : -1) * minorDet * invDet;
+            __m128 rowFactor = _mm_set1_ps(factor);
+            __m128 scaledPivotRow = _mm_mul_ps(rowFactor, U.r[i]);
+            U.r[j] = _mm_sub_ps(U.r[j], scaledPivotRow);
         }
     }
+
+    // Step 2: Forward Substitution to solve L * Y = I
+    FMatrix Y;
+    for (int i = 0; i < 4; ++i) {
+        Y.M[i][i] = 1.0f; // Set diagonal elements of Y to 1
+        for (int j = 0; j < i; ++j) {
+            __m128 rowFactor = _mm_set1_ps(L.M[i][j]);
+            __m128 scaledRow = _mm_mul_ps(rowFactor, Y.r[j]);
+            Y.r[i] = _mm_sub_ps(Y.r[i], scaledRow);
+        }
+    }
+
+    // Step 3: Backward Substitution to solve U * X = Y
+    FMatrix Inv;
+    for (int i = 3; i >= 0; --i) {
+        Inv.r[i] = Y.r[i];
+        for (int j = i + 1; j < 4; ++j) {
+            __m128 rowFactor = _mm_set1_ps(U.M[i][j]);
+            __m128 scaledRow = _mm_mul_ps(rowFactor, Inv.r[j]);
+            Inv.r[i] = _mm_sub_ps(Inv.r[i], scaledRow);
+        }
+        __m128 divisor = _mm_set1_ps(U.M[i][i]);
+        Inv.r[i] = _mm_div_ps(Inv.r[i], divisor);
+    }
+
     return Inv;
 }
 
-FMatrix FMatrix::CreateRotation(float roll, float pitch, float yaw)
-{
-    float radRoll = roll * (3.14159265359f / 180.0f);
-    float radPitch = pitch * (3.14159265359f / 180.0f);
-    float radYaw = yaw * (3.14159265359f / 180.0f);
 
-    float cosRoll = cos(radRoll), sinRoll = sin(radRoll);
-    float cosPitch = cos(radPitch), sinPitch = sin(radPitch);
-    float cosYaw = cos(radYaw), sinYaw = sin(radYaw);
+FMatrix FMatrix::CreateRotation(float roll, float pitch, float yaw) {
+    // Convert degrees to radians
+    constexpr float Deg2Rad = 3.14159265359f / 180.0f;
+    float radRoll = roll * Deg2Rad;
+    float radPitch = pitch * Deg2Rad;
+    float radYaw = yaw * Deg2Rad;
 
-    // Z축 (Yaw) 회전
-    FMatrix rotationZ = { {
-        { cosYaw, sinYaw, 0, 0 },
-        { -sinYaw, cosYaw, 0, 0 },
-        { 0, 0, 1, 0 },
-        { 0, 0, 0, 1 }
-    } };
+    // Precompute trigonometric values
+    float cosR = cosf(radRoll), sinR = sinf(radRoll);
+    float cosP = cosf(radPitch), sinP = sinf(radPitch);
+    float cosY = cosf(radYaw), sinY = sinf(radYaw);
 
-    // Y축 (Pitch) 회전
-    FMatrix rotationY = { {
-        { cosPitch, 0, -sinPitch, 0 },
-        { 0, 1, 0, 0 },
-        { sinPitch, 0, cosPitch, 0 },
-        { 0, 0, 0, 1 }
-    } };
+    // Z-axis rotation matrix (Yaw)
+    FMatrix rotationZ = {
+        _mm_setr_ps(cosY,  sinY, 0.0f, 0.0f),
+        _mm_setr_ps(-sinY, cosY, 0.0f, 0.0f),
+        _mm_setr_ps(0.0f,  0.0f, 1.0f, 0.0f),
+        _mm_setr_ps(0.0f,  0.0f, 0.0f, 1.0f)
+    };
 
-    // X축 (Roll) 회전
-    FMatrix rotationX = { {
-        { 1, 0, 0, 0 },
-        { 0, cosRoll, sinRoll, 0 },
-        { 0, -sinRoll, cosRoll, 0 },
-        { 0, 0, 0, 1 }
-    } };
+    // Y-axis rotation matrix (Pitch)
+    FMatrix rotationY = {
+        _mm_setr_ps(cosP, 0.0f, -sinP, 0.0f),
+        _mm_setr_ps(0.0f, 1.0f,  0.0f, 0.0f),
+        _mm_setr_ps(sinP, 0.0f,  cosP, 0.0f),
+        _mm_setr_ps(0.0f, 0.0f,  0.0f, 1.0f)
+    };
 
-    // DirectX 표준 순서: Z(Yaw) → Y(Pitch) → X(Roll)  
-    return rotationX * rotationY * rotationZ;  // 이렇게 하면  오른쪽 부터 적용됨
+    // X-axis rotation matrix (Roll)
+    FMatrix rotationX = {
+        _mm_setr_ps(1.0f,  0.0f,   0.0f,   0.0f),
+        _mm_setr_ps(0.0f, cosR,   sinR,   0.0f),
+        _mm_setr_ps(0.0f, -sinR, cosR,   0.0f),
+        _mm_setr_ps(0.0f,  0.0f,   0.0f,   1.0f)
+    };
+
+    // Combine rotations in Z(Yaw) → Y(Pitch) → X(Roll) order
+    return rotationX * rotationY * rotationZ;
 }
+
 
 
 // 스케일 행렬 생성
 FMatrix FMatrix::CreateScale(float scaleX, float scaleY, float scaleZ)
 {
-    return { {
-        { scaleX, 0, 0, 0 },
-        { 0, scaleY, 0, 0 },
-        { 0, 0, scaleZ, 0 },
-        { 0, 0, 0, 1 }
-    } };
+    return FMatrix{
+        _mm_setr_ps(scaleX, 0.0f, 0.0f, 0.0f),
+        _mm_setr_ps(0.0f, scaleY, 0.0f, 0.0f),
+        _mm_setr_ps(0.0f, 0.0f, scaleZ, 0.0f),
+        _mm_setr_ps(0.0f, 0.0f, 0.0f, 1.0f)
+    };
 }
 
-FMatrix FMatrix::CreateTranslationMatrix(const FVector& position)
-{
-    FMatrix translationMatrix = FMatrix::Identity;
-    translationMatrix.M[3][0] = position.x;
-    translationMatrix.M[3][1] = position.y;
-    translationMatrix.M[3][2] = position.z;
-    return translationMatrix;
+FMatrix FMatrix::CreateTranslationMatrix(const FVector& position) {
+    return FMatrix{
+        _mm_setr_ps(1.0f, 0.0f, 0.0f, 0.0f),                   
+        _mm_setr_ps(0.0f, 1.0f, 0.0f, 0.0f),                   
+        _mm_setr_ps(0.0f, 0.0f, 1.0f, 0.0f),                  
+        _mm_setr_ps(position.x, position.y, position.z, 1.0f)
+    };
 }
 
-FVector FMatrix::TransformVector(const FVector& v, const FMatrix& m)
-{
-    FVector result;
+FVector FMatrix::TransformVector(const FVector& v, const FMatrix& m) {
+    __m128 vec = _mm_setr_ps(v.x, v.y, v.z, 0.0f);
 
-    // 4x4 행렬을 사용하여 벡터 변환 (W = 0으로 가정, 방향 벡터)
-    result.x = v.x * m.M[0][0] + v.y * m.M[1][0] + v.z * m.M[2][0] + 0.0f * m.M[3][0];
-    result.y = v.x * m.M[0][1] + v.y * m.M[1][1] + v.z * m.M[2][1] + 0.0f * m.M[3][1];
-    result.z = v.x * m.M[0][2] + v.y * m.M[1][2] + v.z * m.M[2][2] + 0.0f * m.M[3][2];
+    __m128 x = _mm_mul_ps(_mm_shuffle_ps(vec, vec, _MM_SHUFFLE(0, 0, 0, 0)), m.r[0]);
+    __m128 y = _mm_mul_ps(_mm_shuffle_ps(vec, vec, _MM_SHUFFLE(1, 1, 1, 1)), m.r[1]);
+    __m128 z = _mm_mul_ps(_mm_shuffle_ps(vec, vec, _MM_SHUFFLE(2, 2, 2, 2)), m.r[2]);
 
+    __m128 result = _mm_add_ps(_mm_add_ps(x, y), z);
 
-    return result;
-}
-
-// FVector4를 변환하는 함수
-FVector4 FMatrix::TransformVector(const FVector4& v, const FMatrix& m)
-{
-    FVector4 result;
-    result.x = v.x * m.M[0][0] + v.y * m.M[1][0] + v.z * m.M[2][0] + v.a * m.M[3][0];
-    result.y = v.x * m.M[0][1] + v.y * m.M[1][1] + v.z * m.M[2][1] + v.a * m.M[3][1];
-    result.z = v.x * m.M[0][2] + v.y * m.M[1][2] + v.z * m.M[2][2] + v.a * m.M[3][2];
-    result.a = v.x * m.M[0][3] + v.y * m.M[1][3] + v.z * m.M[2][3] + v.a * m.M[3][3];
-    return result;
+    alignas(16) float arr[4];
+    _mm_store_ps(arr, result);
+    return FVector(arr[0], arr[1], arr[2]);
 }
 
 
+FVector4 FMatrix::TransformVector(const FVector4& v, const FMatrix& m) {
+    __m128 vec = _mm_setr_ps(v.x, v.y, v.z, v.a);
+
+    __m128 x = _mm_mul_ps(_mm_shuffle_ps(vec, vec, _MM_SHUFFLE(0, 0, 0, 0)), m.r[0]);
+    __m128 y = _mm_mul_ps(_mm_shuffle_ps(vec, vec, _MM_SHUFFLE(1, 1, 1, 1)), m.r[1]);
+    __m128 z = _mm_mul_ps(_mm_shuffle_ps(vec, vec, _MM_SHUFFLE(2, 2, 2, 2)), m.r[2]);
+    __m128 w = _mm_mul_ps(_mm_shuffle_ps(vec, vec, _MM_SHUFFLE(3, 3, 3, 3)), m.r[3]);
+
+    __m128 result = _mm_add_ps(_mm_add_ps(x, y), _mm_add_ps(z, w));
+
+    return FVector4(result);
+}

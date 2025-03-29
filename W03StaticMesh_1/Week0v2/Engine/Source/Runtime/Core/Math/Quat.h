@@ -84,28 +84,12 @@ struct FQuat
 		return qRoll * qPitch * qYaw;
 	}
 	// 쿼터니언을 회전 행렬로 변환
-	FMatrix ToMatrix() const
-	{
-		FMatrix RotationMatrix;
-		RotationMatrix.M[0][0] = 1.0f - 2.0f * (y * y + z * z);
-		RotationMatrix.M[0][1] = 2.0f * (x * y - w * z);
-		RotationMatrix.M[0][2] = 2.0f * (x * z + w * y);
-		RotationMatrix.M[0][3] = 0.0f;
-
-
-		RotationMatrix.M[1][0] = 2.0f * (x * y + w * z);
-		RotationMatrix.M[1][1] = 1.0f - 2.0f * (x * x + z * z);
-		RotationMatrix.M[1][2] = 2.0f * (y * z - w * x);
-		RotationMatrix.M[1][3] = 0.0f;
-
-		RotationMatrix.M[2][0] = 2.0f * (x * z - w * y);
-		RotationMatrix.M[2][1] = 2.0f * (y * z + w * x);
-		RotationMatrix.M[2][2] = 1.0f - 2.0f * (x * x + y * y);
-		RotationMatrix.M[2][3] = 0.0f;
-
-		RotationMatrix.M[3][0] = RotationMatrix.M[3][1] = RotationMatrix.M[3][2] = 0.0f;
-		RotationMatrix.M[3][3] = 1.0f;
-
-		return RotationMatrix;
-	}
+    FMatrix ToMatrix() const {
+        return FMatrix{
+            _mm_setr_ps(1.0f - 2.0f * (y * y + z * z), 2.0f * (x * y - w * z), 2.0f * (x * z + w * y), 0.0f),
+            _mm_setr_ps(2.0f * (x * y + w * z), 1.0f - 2.0f * (x * x + z * z), 2.0f * (y * z - w * x), 0.0f),
+            _mm_setr_ps(2.0f * (x * z - w * y), 2.0f * (y * z + w * x), 1.0f - 2.0f * (x * x + y * y), 0.0f),
+            _mm_setr_ps(0.0f, 0.0f, 0.0f, 1.0f)
+        };
+    }
 };
