@@ -196,7 +196,7 @@ void FEngineLoop::Tick()
         LevelEditor->Tick(elapsedTime);
         Render();
         UIMgr->BeginFrame();
-        UnrealEditor->Render();
+         UnrealEditor->Render();
 
         Console::GetInstance().Draw();
         StatPanel::GetInstance().Draw();

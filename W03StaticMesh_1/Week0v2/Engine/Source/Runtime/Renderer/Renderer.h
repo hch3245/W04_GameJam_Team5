@@ -19,6 +19,8 @@ class FEditorViewportClient;
 class UBillboardComponent;
 class UStaticMeshComponent;
 class UGizmoBaseComponent;
+
+
 class FRenderer 
 {
 
@@ -41,16 +43,23 @@ public:
     uint32 Stride;
     uint32 Stride2;
 
+
+
+    UMaterial* LastMaterial = nullptr;
+    bool bShaderInitialized = false;
+
+
+
 public:
     void Initialize(FGraphicsDevice* graphics);
    
-    void PrepareShader() const;
+    void PrepareShader( );
     
     //Render
     void RenderPrimitive(ID3D11Buffer* pBuffer, UINT numVertices) const;
     void RenderPrimitive(ID3D11Buffer* pVertexBuffer, UINT numVertices, ID3D11Buffer* pIndexBuffer, UINT numIndices) const;
-    void RenderPrimitive(OBJ::FStaticMeshRenderData* renderData, TArray<FStaticMaterial*> materials, TArray<UMaterial*> overrideMaterial, int selectedSubMeshIndex) const;
-   
+    void RenderPrimitive(OBJ::FStaticMeshRenderData* renderData, TArray<FStaticMaterial*> materials, TArray<UMaterial*> overrideMaterial, int selectedSubMeshIndex) ;
+    void SortMeshesByMaterial();
     void RenderTexturedModelPrimitive(ID3D11Buffer* pVertexBuffer, UINT numVertices, ID3D11Buffer* pIndexBuffer, UINT numIndices, ID3D11ShaderResourceView* InTextureSRV, ID3D11SamplerState* InSamplerState) const;
     //Release
     void Release();
