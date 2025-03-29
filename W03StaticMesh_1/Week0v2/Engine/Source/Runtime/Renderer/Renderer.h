@@ -20,6 +20,7 @@ class UBillboardComponent;
 class UStaticMeshComponent;
 class UGizmoBaseComponent;
 
+struct Plane;
 
 class FRenderer 
 {
@@ -47,7 +48,7 @@ public:
 
     UMaterial* LastMaterial = nullptr;
     bool bShaderInitialized = false;
-
+ 
 
 
 public:

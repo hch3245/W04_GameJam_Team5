@@ -1088,7 +1088,6 @@ void FRenderer::SortMeshesByMaterial()
 
 
 
-
 void FRenderer::RenderStaticMeshes(UWorld* World, std::shared_ptr<FEditorViewportClient> ActiveViewport)
 {
     PrepareShader();
@@ -1096,14 +1095,7 @@ void FRenderer::RenderStaticMeshes(UWorld* World, std::shared_ptr<FEditorViewpor
     // 메시 정렬 (한 번만)
     SortMeshesByMaterial();
 
-
-    // 배치 렌더링을 위한 버퍼 준비
-    std::vector<FVertexSimple> AllVertices;    // 모든 정점
-    std::vector<uint32_t> AllIndices;         // 모든 인덱스
-    std::vector<FMatrix> ModelMatrices;       // 각 메시의 변환 행렬들
-    std::vector<UMaterial*> Materials;        // 각 메시의 재질들
-    std::vector<FVector4> UUIDColors;         // UUID 색상들
-    std::vector<bool> IsSelected;             // 선택된 객체들
+    ActiveViewport->ExtractFrustumPlanes();
 
     // 2️⃣ 재질별로 메시들을 렌더링
     for (auto& MaterialPair : SortedMesh)
@@ -1152,14 +1144,55 @@ void FRenderer::RenderStaticMeshes(UWorld* World, std::shared_ptr<FEditorViewpor
             // 상수 데이터 업데이트
             UpdateConstant(MVP, NormalMatrix, UUIDColor, isSelected);
 
-
-
             // 메시 렌더링
             OBJ::FStaticMeshRenderData* renderData = StaticMeshComp->GetStaticMesh()->GetRenderData();
-            RenderPrimitive(renderData, StaticMeshComp->GetStaticMesh()->GetMaterials(), StaticMeshComp->GetOverrideMaterials(), StaticMeshComp->GetselectedSubMeshIndex());
+
+            bool bInsideFrustum = false;  // 기본적으로 메시가 프러스텀 외부에 있다고 간주
+
+            // 메시의 각 정점들을 순회
+            for (const FVertexSimple& Vertex : renderData->Vertices)
+            {
+                bool bVertexInside = true;  // 각 정점이 프러스텀 내에 있는지 여부
+
+                // 변환된 정점 계산
+                FVector TransformedVertex = MVP.TransformPosition(FVector(Vertex.x, Vertex.y, Vertex.z));
+
+                // 각 평면에 대해 정점이 내부에 있는지 확인
+                for (int i = 0; i < 6; i++)
+                {
+                    // 평면 방정식에 정점 좌표를 대입하여 계산
+                    float result = ActiveViewport->FrustrumPlanes[i].a * TransformedVertex.x
+                        + ActiveViewport->FrustrumPlanes[i].b * TransformedVertex.y
+                        + ActiveViewport->FrustrumPlanes[i].c * TransformedVertex.z
+                        - ActiveViewport->FrustrumPlanes[i].d;
+
+                    // 점이 프러스텀 외부에 있으면 그 정점은 프러스텀 바깥
+                    if (result > 0.0f)
+                    {
+                        bVertexInside = false;  // 정점이 바깥에 있으면 더 이상 검사할 필요 없음
+                        break;
+                    }
+                }
+
+                // 하나라도 내부에 있는 정점이 있으면 메시를 렌더링
+                if (bVertexInside)
+                {
+                    bInsideFrustum = true;  // 메시가 프러스텀 내에 있음을 의미
+                    break;  // 하나라도 내부에 있으면 메시를 렌더링 가능
+                }
+            }
+
+            // 메시가 프러스텀 내에 있다면 렌더링
+            if (bInsideFrustum)
+            {
+                RenderPrimitive(renderData, StaticMeshComp->GetStaticMesh()->GetMaterials(),
+                    StaticMeshComp->GetOverrideMaterials(), StaticMeshComp->GetselectedSubMeshIndex());
+            }
+
         }
     }
 }
+
 
 void FRenderer::RenderGizmos(const UWorld* World, const std::shared_ptr<FEditorViewportClient>& ActiveViewport)
 {
