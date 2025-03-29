@@ -1149,13 +1149,18 @@ void FRenderer::RenderStaticMeshes(UWorld* World, std::shared_ptr<FEditorViewpor
 
             bool bInsideFrustum = false;  // 기본적으로 메시가 프러스텀 외부에 있다고 간주
 
+            FVector Vertex(
+                (renderData->BoundingBoxMax.x - renderData->BoundingBoxMin.x) / 2.0f,
+                (renderData->BoundingBoxMax.y - renderData->BoundingBoxMin.y) / 2.0f,
+                (renderData->BoundingBoxMax.z - renderData->BoundingBoxMin.z) / 2.0f
+            );
+
             // 메시의 각 정점들을 순회
-            for (const FVertexSimple& Vertex : renderData->Vertices)
             {
                 bool bVertexInside = true;  // 각 정점이 프러스텀 내에 있는지 여부
 
                 // 변환된 정점 계산
-                FVector TransformedVertex = MVP.TransformPosition(FVector(Vertex.x, Vertex.y, Vertex.z));
+                FVector TransformedVertex = Model.TransformPosition(Vertex);
 
                 // 각 평면에 대해 정점이 내부에 있는지 확인
                 for (int i = 0; i < 6; i++)
@@ -1164,13 +1169,13 @@ void FRenderer::RenderStaticMeshes(UWorld* World, std::shared_ptr<FEditorViewpor
                     float result = ActiveViewport->FrustrumPlanes[i].a * TransformedVertex.x
                         + ActiveViewport->FrustrumPlanes[i].b * TransformedVertex.y
                         + ActiveViewport->FrustrumPlanes[i].c * TransformedVertex.z
-                        - ActiveViewport->FrustrumPlanes[i].d;
+                        + ActiveViewport->FrustrumPlanes[i].d;
 
                     // 점이 프러스텀 외부에 있으면 그 정점은 프러스텀 바깥
-                    if (result > 0.0f)
+                    if (result < 0.0f)
                     {
                         bVertexInside = false;  // 정점이 바깥에 있으면 더 이상 검사할 필요 없음
-                        break;
+                        //break;
                     }
                 }
 
@@ -1178,7 +1183,7 @@ void FRenderer::RenderStaticMeshes(UWorld* World, std::shared_ptr<FEditorViewpor
                 if (bVertexInside)
                 {
                     bInsideFrustum = true;  // 메시가 프러스텀 내에 있음을 의미
-                    break;  // 하나라도 내부에 있으면 메시를 렌더링 가능
+                    //break;  // 하나라도 내부에 있으면 메시를 렌더링 가능
                 }
             }
 

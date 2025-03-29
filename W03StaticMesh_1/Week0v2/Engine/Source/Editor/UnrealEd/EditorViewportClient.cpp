@@ -245,60 +245,61 @@ FMatrix ViewProjMatrix;
 void FEditorViewportClient::ExtractFrustumPlanes()
 {
      ViewProjMatrix = View * Projection;
-
-  
+     ViewProjMatrix = FMatrix::Transpose(ViewProjMatrix);
 
     // Left Plane (왼쪽 평면)
-    FrustrumPlanes[0].a = ViewProjMatrix[3][0] + ViewProjMatrix[2][0];
-    FrustrumPlanes[0].b = ViewProjMatrix[3][1] + ViewProjMatrix[2][1];
-    FrustrumPlanes[0].c = ViewProjMatrix[3][2] + ViewProjMatrix[2][2];
-    FrustrumPlanes[0].d = ViewProjMatrix[3][3] + ViewProjMatrix[2][3];
+     FrustrumPlanes[0].a = ViewProjMatrix[3][0] + ViewProjMatrix[0][0];
+     FrustrumPlanes[0].b = ViewProjMatrix[3][1] + ViewProjMatrix[0][1];
+     FrustrumPlanes[0].c = ViewProjMatrix[3][2] + ViewProjMatrix[0][2];
+     FrustrumPlanes[0].d = ViewProjMatrix[3][3] + ViewProjMatrix[0][3];
 
+     // Right Plane
+     FrustrumPlanes[1].a = ViewProjMatrix[3][0] - ViewProjMatrix[0][0];
+     FrustrumPlanes[1].b = ViewProjMatrix[3][1] - ViewProjMatrix[0][1];
+     FrustrumPlanes[1].c = ViewProjMatrix[3][2] - ViewProjMatrix[0][2];
+     FrustrumPlanes[1].d = ViewProjMatrix[3][3] - ViewProjMatrix[0][3];
 
-    // 오른쪽 평면 (Right Plane)
-    FrustrumPlanes[1].a =  ViewProjMatrix[3][0] - ViewProjMatrix[2][0];
-    FrustrumPlanes[1].b =  ViewProjMatrix[3][1] - ViewProjMatrix[2][1];
-    FrustrumPlanes[1].c =  ViewProjMatrix[3][2] - ViewProjMatrix[2][2];
-    FrustrumPlanes[1].d =  ViewProjMatrix[3][3] - ViewProjMatrix[2][3];
+     // Top Plane
+     FrustrumPlanes[2].a = ViewProjMatrix[3][0] - ViewProjMatrix[1][0];
+     FrustrumPlanes[2].b = ViewProjMatrix[3][1] - ViewProjMatrix[1][1];
+     FrustrumPlanes[2].c = ViewProjMatrix[3][2] - ViewProjMatrix[1][2];
+     FrustrumPlanes[2].d = ViewProjMatrix[3][3] - ViewProjMatrix[1][3];
 
-    // 위쪽 평면 (Top Plane)
-    FrustrumPlanes[2].a = ViewProjMatrix[3][0]- ViewProjMatrix[0][0];
-    FrustrumPlanes[2].b = ViewProjMatrix[3][1]- ViewProjMatrix[0][1];
-    FrustrumPlanes[2].c = ViewProjMatrix[3][2]- ViewProjMatrix[0][2];
-    FrustrumPlanes[2].d = ViewProjMatrix[3][3]- ViewProjMatrix[0][3];
+     // Bottom Plane
+     FrustrumPlanes[3].a = ViewProjMatrix[3][0] + ViewProjMatrix[1][0];
+     FrustrumPlanes[3].b = ViewProjMatrix[3][1] + ViewProjMatrix[1][1];
+     FrustrumPlanes[3].c = ViewProjMatrix[3][2] + ViewProjMatrix[1][2];
+     FrustrumPlanes[3].d = ViewProjMatrix[3][3] + ViewProjMatrix[1][3];
 
-    // 아래쪽 평면 (Bottom Plane)
-    FrustrumPlanes[3].a =  ViewProjMatrix[3][0] + ViewProjMatrix[0][0];
-    FrustrumPlanes[3].b =  ViewProjMatrix[3][1] + ViewProjMatrix[0][1];
-    FrustrumPlanes[3].c =  ViewProjMatrix[3][2] + ViewProjMatrix[0][2];
-    FrustrumPlanes[3].d =  ViewProjMatrix[3][3] + ViewProjMatrix[0][3];
+     // Near Plane
+     FrustrumPlanes[4].a = ViewProjMatrix[3][0] + ViewProjMatrix[2][0];
+     FrustrumPlanes[4].b = ViewProjMatrix[3][1] + ViewProjMatrix[2][1];
+     FrustrumPlanes[4].c = ViewProjMatrix[3][2] + ViewProjMatrix[2][2];
+     FrustrumPlanes[4].d = ViewProjMatrix[3][3] + ViewProjMatrix[2][3];
 
-    // 가까운 평면 (Near Plane)
-    FrustrumPlanes[4].a =ViewProjMatrix[3][0] + ViewProjMatrix[1][0];
-    FrustrumPlanes[4].b =ViewProjMatrix[3][1] + ViewProjMatrix[1][1];
-    FrustrumPlanes[4].c =ViewProjMatrix[3][2] + ViewProjMatrix[1][2];
-    FrustrumPlanes[4].d =ViewProjMatrix[3][3] + ViewProjMatrix[1][3];
+     // Far Plane
+     FrustrumPlanes[5].a = ViewProjMatrix[3][0] - ViewProjMatrix[2][0];
+     FrustrumPlanes[5].b = ViewProjMatrix[3][1] - ViewProjMatrix[2][1];
+     FrustrumPlanes[5].c = ViewProjMatrix[3][2] - ViewProjMatrix[2][2];
+     FrustrumPlanes[5].d = ViewProjMatrix[3][3] - ViewProjMatrix[2][3];
 
-    // 먼 평면 (Far Plane)
-    FrustrumPlanes[5].a = ViewProjMatrix[3][0] - ViewProjMatrix[1][0];
-    FrustrumPlanes[5].b = ViewProjMatrix[3][1] - ViewProjMatrix[1][1];
-    FrustrumPlanes[5].c = ViewProjMatrix[3][2] - ViewProjMatrix[1][2];
-    FrustrumPlanes[5].d = ViewProjMatrix[3][3] - ViewProjMatrix[1][3];
-
-    // 평면 법선 정규화
-    for (int i = 0; i < 6; ++i)
-    {
-        float length = sqrtf(FrustrumPlanes[i].a * FrustrumPlanes[i].a +
-            FrustrumPlanes[i].b * FrustrumPlanes[i].b +
-            FrustrumPlanes[i].c * FrustrumPlanes[i].c);
-
-        FrustrumPlanes[i].a /= length;
-        FrustrumPlanes[i].b /= length;
-        FrustrumPlanes[i].c /= length;
-        FrustrumPlanes[i].d /= length;
-    }
+     // Normalize the planes
+     for (int i = 0; i < 6; ++i) {
+         float length = sqrtf(
+             FrustrumPlanes[i].a * FrustrumPlanes[i].a +
+             FrustrumPlanes[i].b * FrustrumPlanes[i].b +
+             FrustrumPlanes[i].c * FrustrumPlanes[i].c
+         );
+         if (length > 0.000001f) {
+             FrustrumPlanes[i].a /= length;
+             FrustrumPlanes[i].b /= length;
+             FrustrumPlanes[i].c /= length;
+             FrustrumPlanes[i].d /= length;
+         }
+     }
 
 }
+
 void FEditorViewportClient::UpdateViewMatrix()
 {
     if (IsPerspective()) {
