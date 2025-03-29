@@ -240,6 +240,53 @@ void FEditorViewportClient::PivotMoveUp(float _Value)
     Pivot = Pivot + ViewTransformOrthographic.GetUpVector() * _Value * 0.05f;
 }
 
+void FEditorViewportClient::ExtractFrustumPlanes()
+{
+    FMatrix ViewProjMatrix = View * Projection;
+
+    // SIMD를 활용하여 행렬을 한 번에 불러옵니다.
+    __m128 row0 = ViewProjMatrix.r[0];
+    __m128 row1 = ViewProjMatrix.r[1];
+    __m128 row2 = ViewProjMatrix.r[2];
+    __m128 row3 = ViewProjMatrix.r[3];
+
+    // 왼쪽 평면 (Left Plane)
+    FrustrumPlanes[0].a = row0.m128_f32[3] + row0.m128_f32[0];
+    FrustrumPlanes[0].b = row1.m128_f32[3] + row1.m128_f32[0];
+    FrustrumPlanes[0].c = row2.m128_f32[3] + row2.m128_f32[0];
+    FrustrumPlanes[0].d = row3.m128_f32[3] + row3.m128_f32[0];
+
+    // 오른쪽 평면 (Right Plane)
+    FrustrumPlanes[1].a = row0.m128_f32[3] - row0.m128_f32[0];
+    FrustrumPlanes[1].b = row1.m128_f32[3] - row1.m128_f32[0];
+    FrustrumPlanes[1].c = row2.m128_f32[3] - row2.m128_f32[0];
+    FrustrumPlanes[1].d = row3.m128_f32[3] - row3.m128_f32[0];
+
+    // 위쪽 평면 (Top Plane)
+    FrustrumPlanes[2].a = row0.m128_f32[3] - row0.m128_f32[1]; // 이 부분을 -로 수정
+    FrustrumPlanes[2].b = row1.m128_f32[3] - row1.m128_f32[1]; // 이 부분을 -로 수정
+    FrustrumPlanes[2].c = row2.m128_f32[3] - row2.m128_f32[1]; // 이 부분을 -로 수정
+    FrustrumPlanes[2].d = row3.m128_f32[3] - row3.m128_f32[1]; // 이 부분을 -로 수정
+
+    // 아래쪽 평면 (Bottom Plane)
+    FrustrumPlanes[3].a = row0.m128_f32[3] + row0.m128_f32[1]; // 이 부분을 +로 수정
+    FrustrumPlanes[3].b = row1.m128_f32[3] + row1.m128_f32[1]; // 이 부분을 +로 수정
+    FrustrumPlanes[3].c = row2.m128_f32[3] + row2.m128_f32[1]; // 이 부분을 +로 수정
+    FrustrumPlanes[3].d = row3.m128_f32[3] + row3.m128_f32[1]; // 이 부분을 +로 수정
+
+    // 가까운 평면 (Near Plane)
+    FrustrumPlanes[4].a = row0.m128_f32[2];
+    FrustrumPlanes[4].b = row1.m128_f32[2];
+    FrustrumPlanes[4].c = row2.m128_f32[2];
+    FrustrumPlanes[4].d = row3.m128_f32[2];
+
+    // 먼 평면 (Far Plane)
+    FrustrumPlanes[5].a = row0.m128_f32[3] - row0.m128_f32[2];
+    FrustrumPlanes[5].b = row1.m128_f32[3] - row1.m128_f32[2];
+    FrustrumPlanes[5].c = row2.m128_f32[3] - row2.m128_f32[2];
+    FrustrumPlanes[5].d = row3.m128_f32[3] - row3.m128_f32[2];
+}
+
 void FEditorViewportClient::UpdateViewMatrix()
 {
     if (IsPerspective()) {
@@ -459,6 +506,7 @@ FVector FViewportCameraTransform::GetUpVector()
     Up = JungleMath::FVectorRotate(Up, ViewRotation);
     return Up;
 }
+
 
 FViewportCameraTransform::FViewportCameraTransform()
 {

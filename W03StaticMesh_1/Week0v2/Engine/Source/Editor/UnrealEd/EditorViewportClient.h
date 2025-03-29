@@ -14,6 +14,10 @@
 extern FEngineLoop GEngineLoop;
 
 
+struct Plane {
+    float a, b, c, d; // 평면의 방정식 계수 (ax + by + cz + d = 0)
+};
+
 
 struct FViewportCameraTransform
 {
@@ -26,6 +30,8 @@ public:
     FVector GetUpVector();
 
 public:
+  
+
     FViewportCameraTransform();
 
     /** Sets the transform's location */
@@ -142,6 +148,9 @@ public: //Camera Movement
     void PivotMoveRight(float _Value);
     void PivotMoveUp(float _Value);
 
+    Plane FrustrumPlanes[6];
+    void ExtractFrustumPlanes();
+   
     FMatrix& GetViewMatrix() { return  View; }
     FMatrix& GetProjectionMatrix() { return Projection; }
     void UpdateViewMatrix();
@@ -177,6 +186,9 @@ public:
     PROPERTY(float, GridSize)
     float GetCameraSpeedScalar() const { return CameraSpeedScalar; };
     void SetCameraSpeedScalar(float value);
+
+
+
 
 private:
     template <typename T>

@@ -68,4 +68,14 @@ struct FMatrix
 		float w = M[0][3] * vector.x + M[1][3] * vector.y + M[2][3] * vector.z + M[3][3];
 		return w != 0.0f ? FVector{ x / w, y / w, z / w } : FVector{ x, y, z };
 	}
+
+    FVector operator*(const FVector& Vec) const
+    {
+        // 행렬과 벡터의 곱셈
+        return FVector(
+            M[0][0] * Vec.x + M[1][0] * Vec.y + M[2][0] * Vec.z + M[3][0],
+            M[0][1] * Vec.x + M[1][1] * Vec.y + M[2][1] * Vec.z + M[3][1],
+            M[0][2] * Vec.x + M[1][2] * Vec.y + M[2][2] * Vec.z + M[3][2]
+        );
+    }
 };
