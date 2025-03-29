@@ -51,21 +51,22 @@ struct FMatrix
 	static FVector4 TransformVector(const FVector4& v, const FMatrix& m);
 	static FMatrix CreateTranslationMatrix(const FVector& position);
 
-	FVector4 TransformFVector4(const FVector4& vector)
-	{
-		return FVector4(
-			M[0][0] * vector.x + M[1][0] * vector.y + M[2][0] * vector.z + M[3][0] * vector.a,
-			M[0][1] * vector.x + M[1][1] * vector.y + M[2][1] * vector.z + M[3][1] * vector.a,
-			M[0][2] * vector.x + M[1][2] * vector.y + M[2][2] * vector.z + M[3][2] * vector.a,
-			M[0][3] * vector.x + M[1][3] * vector.y + M[2][3] * vector.z + M[3][3] * vector.a
-		);
-	}
-	FVector TransformPosition(const FVector& vector) const
-	{
-		float x = M[0][0] * vector.x + M[1][0] * vector.y + M[2][0] * vector.z + M[3][0];
-		float y = M[0][1] * vector.x + M[1][1] * vector.y + M[2][1] * vector.z + M[3][1];
-		float z = M[0][2] * vector.x + M[1][2] * vector.y + M[2][2] * vector.z + M[3][2];
-		float w = M[0][3] * vector.x + M[1][3] * vector.y + M[2][3] * vector.z + M[3][3];
-		return w != 0.0f ? FVector{ x / w, y / w, z / w } : FVector{ x, y, z };
-	}
+	FVector TransformPosition(const FVector& vector) const {
+
+        __m128 vec = _mm_setr_ps(vector.x, vector.y, vector.z, 1.0f);
+
+        __m128 x = _mm_mul_ps(_mm_shuffle_ps(vec, vec, _MM_SHUFFLE(0, 0, 0, 0)), r[0]);
+        __m128 y = _mm_mul_ps(_mm_shuffle_ps(vec, vec, _MM_SHUFFLE(1, 1, 1, 1)), r[1]);
+        __m128 z = _mm_mul_ps(_mm_shuffle_ps(vec, vec, _MM_SHUFFLE(2, 2, 2, 2)), r[2]);
+        __m128 w = _mm_mul_ps(_mm_shuffle_ps(vec, vec, _MM_SHUFFLE(3, 3, 3, 3)), r[3]);
+
+        __m128 result = _mm_add_ps(_mm_add_ps(x, y), _mm_add_ps(z, w));
+
+        alignas(16) float arr[4];
+        _mm_store_ps(arr, result);
+
+        return (arr[3] != 0.0f) ?
+            FVector(arr[0] / arr[3], arr[1] / arr[3], arr[2] / arr[3]) :
+            FVector(arr[0], arr[1], arr[2]);
+    }
 };
