@@ -110,41 +110,55 @@ float FMatrix::Determinant(const FMatrix& Mat) {
     return det;
 }
 
-// 역행렬 (가우스-조던 소거법)
+// LU분해 방식으로 변경
 FMatrix FMatrix::Inverse(const FMatrix& Mat) {
-    float det = Determinant(Mat);
-    if (fabs(det) < 1e-6) {
-        return Identity;
-    }
+    // Step 1: LU Decomposition
+    FMatrix L = Identity; // Lower triangular matrix
+    FMatrix U = Mat;      // Upper triangular matrix
 
-    FMatrix Inv;
-    float invDet = 1.0f / det;
+    for (int i = 0; i < 4; ++i) {
+        // Normalize the pivot row in U
+        __m128 pivot = _mm_set1_ps(U.M[i][i]);
+        U.r[i] = _mm_div_ps(U.r[i], pivot);
 
-    // 여인수 행렬 계산 후 전치하여 역행렬 계산
-    for (int32 i = 0; i < 4; i++) {
-        for (int32 j = 0; j < 4; j++) {
-            float subMat[3][3];
-            int32 subRow = 0;
-            for (int32 r = 0; r < 4; r++) {
-                if (r == i) continue;
-                int32 subCol = 0;
-                for (int32 c = 0; c < 4; c++) {
-                    if (c == j) continue;
-                    subMat[subRow][subCol] = Mat.M[r][c];
-                    subCol++;
-                }
-                subRow++;
-            }
-            float minorDet =
-                subMat[0][0] * (subMat[1][1] * subMat[2][2] - subMat[1][2] * subMat[2][1]) -
-                subMat[0][1] * (subMat[1][0] * subMat[2][2] - subMat[1][2] * subMat[2][0]) +
-                subMat[0][2] * (subMat[1][0] * subMat[2][1] - subMat[1][1] * subMat[2][0]);
+        // Update rows below the pivot in L and U
+        for (int j = i + 1; j < 4; ++j) {
+            float factor = U.M[j][i];
+            L.M[j][i] = factor;
 
-            Inv.M[j][i] = ((i + j) % 2 == 0 ? 1 : -1) * minorDet * invDet;
+            __m128 rowFactor = _mm_set1_ps(factor);
+            __m128 scaledPivotRow = _mm_mul_ps(rowFactor, U.r[i]);
+            U.r[j] = _mm_sub_ps(U.r[j], scaledPivotRow);
         }
     }
+
+    // Step 2: Forward Substitution to solve L * Y = I
+    FMatrix Y;
+    for (int i = 0; i < 4; ++i) {
+        Y.M[i][i] = 1.0f; // Set diagonal elements of Y to 1
+        for (int j = 0; j < i; ++j) {
+            __m128 rowFactor = _mm_set1_ps(L.M[i][j]);
+            __m128 scaledRow = _mm_mul_ps(rowFactor, Y.r[j]);
+            Y.r[i] = _mm_sub_ps(Y.r[i], scaledRow);
+        }
+    }
+
+    // Step 3: Backward Substitution to solve U * X = Y
+    FMatrix Inv;
+    for (int i = 3; i >= 0; --i) {
+        Inv.r[i] = Y.r[i];
+        for (int j = i + 1; j < 4; ++j) {
+            __m128 rowFactor = _mm_set1_ps(U.M[i][j]);
+            __m128 scaledRow = _mm_mul_ps(rowFactor, Inv.r[j]);
+            Inv.r[i] = _mm_sub_ps(Inv.r[i], scaledRow);
+        }
+        __m128 divisor = _mm_set1_ps(U.M[i][i]);
+        Inv.r[i] = _mm_div_ps(Inv.r[i], divisor);
+    }
+
     return Inv;
 }
+
 
 FMatrix FMatrix::CreateRotation(float roll, float pitch, float yaw) {
     // Convert degrees to radians
