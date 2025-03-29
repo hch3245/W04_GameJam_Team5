@@ -1,6 +1,8 @@
 #pragma once
 #include <cmath>
 #include <algorithm>
+#include <xmmintrin.h>
+
 #include "Core/Container/String.h"
 #include "Core/Container/Array.h"
 #include "UObject/NameTypes.h"
