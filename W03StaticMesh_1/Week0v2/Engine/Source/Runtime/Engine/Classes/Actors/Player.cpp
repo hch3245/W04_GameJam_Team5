@@ -18,8 +18,6 @@
 #include <WindowsPlatformTime.h>
 
 
-using namespace DirectX;
-
 AEditorPlayer::AEditorPlayer()
 {
 }
