@@ -16,7 +16,8 @@
 #include "UObject/UObjectIterator.h"
 #include "EngineLoop.h"
 #include <WindowsPlatformTime.h>
-
+#include "Core/Math/Octree.h"
+#include "Engine/Classes/Engine/StaticMeshActor.h"
 
 AEditorPlayer::AEditorPlayer()
 {
@@ -42,6 +43,8 @@ void AEditorPlayer::Input()
             GetCursorPos(&mousePos);
             GetCursorPos(&m_LastMousePos);
 
+            UWorld* world = GEngineLoop.GetWorld();
+
             uint32 UUID = GetEngine().graphicDevice.GetPixelUUID(mousePos);
             // TArray<UObject*> objectArr = GetWorld()->GetObjectArr();
             
@@ -50,13 +53,13 @@ void AEditorPlayer::Input()
             FScopeCycleCounter pickCounter(StatId);  // 성능 추적 시작
    
 
-            for ( const auto obj : TObjectRange<USceneComponent>())
+            /*for ( const auto obj : TObjectRange<USceneComponent>())
             {
                 if (obj->GetUUID() != UUID) continue;
 
                 UE_LOG(LogLevel::Display, *obj->GetName());
             }
-            ScreenToClient(GetEngine().hWnd, &mousePos);
+            ScreenToClient(GetEngine().hWnd, &mousePos);*/
 
             FVector pickPosition;
 
@@ -65,7 +68,21 @@ void AEditorPlayer::Input()
             bool res = PickGizmo(pickPosition);
             if (!res)
             {
-                bool isSuceed= PickActor(pickPosition);
+                FMatrix viewMatrix = GEngineLoop.GetLevelEditor()->GetActiveViewportClient()->GetViewMatrix();
+                FMatrix inverseMatrix = FMatrix::Inverse(viewMatrix);
+                FVector cameraOrigin = { 0,0,0 };
+                FVector pickRayOrigin = inverseMatrix.TransformPosition(cameraOrigin);
+                FVector transformedPick = inverseMatrix.TransformPosition(pickPosition);
+                FVector rayDirection = (transformedPick - pickRayOrigin).Normalize();
+
+
+                UE_LOG(LogLevel::Display, std::to_string(world->GetOctree()->objectCount).c_str() );
+                std::vector<UObject*> pickedObjects = world->GetOctree()->RayCast(pickRayOrigin, rayDirection);
+
+
+                bool isSuceed = PickActorFromActors(pickPosition, pickedObjects);
+
+                /*bool isSuceed= PickActor(pickPosition);*/
 
 
                 if (isSuceed)
@@ -286,6 +303,45 @@ bool AEditorPlayer::PickActor(const FVector& pickPosition)
     if (Possible)
     {
         GetWorld()->SetPickedActor(Possible->GetOwner());
+        return true;
+    }
+    else
+        return false;
+}
+
+bool AEditorPlayer::PickActorFromActors(const FVector& pickPosition, std::vector<UObject*> pickTestActors)
+{
+    AActor* Possible = nullptr;
+    int maxIntersect = 0;
+    float minDistance = FLT_MAX;
+
+    AStaticMeshActor* pickTestActor;
+    for (const auto iter : pickTestActors)
+    {
+        if (iter->IsA<AStaticMeshActor>())
+        {
+            pickTestActor = static_cast<AStaticMeshActor*>(iter);
+            float Distance = 0.0f;
+            int currentIntersectCount = 0;
+            if (RayIntersectsObject(pickPosition, pickTestActor->GetStaticMeshComponent(), Distance, currentIntersectCount))
+            {
+                if (Distance < minDistance)
+                {
+                    minDistance = Distance;
+                    maxIntersect = currentIntersectCount;
+                    Possible = pickTestActor;
+                }
+                else if (abs(Distance - minDistance) < FLT_EPSILON && currentIntersectCount > maxIntersect)
+                {
+                    maxIntersect = currentIntersectCount;
+                    Possible = pickTestActor;
+                }
+            }
+        }
+    }
+    if (Possible)
+    {
+        GetWorld()->SetPickedActor(Possible);
         return true;
     }
     else

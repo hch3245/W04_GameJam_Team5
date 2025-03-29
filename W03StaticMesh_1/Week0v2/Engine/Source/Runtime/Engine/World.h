@@ -12,7 +12,7 @@ class UCameraComponent;
 class AEditorPlayer;
 class USceneComponent;
 class UTransformGizmo;
-
+class Octree;
 
 class UWorld : public UObject
 {
@@ -54,6 +54,9 @@ private:
     UCameraComponent* camera = nullptr;
     AEditorPlayer* EditorPlayer = nullptr;
 
+    Octree* worldOctree = nullptr;
+    TArray<UObject*> OctreeObjects;
+
 public:
     UObject* worldGizmo = nullptr;
 
@@ -63,6 +66,11 @@ public:
     UCameraComponent* GetCamera() const { return camera; }
     AEditorPlayer* GetEditorPlayer() const { return EditorPlayer; }
 
+    Octree* GetOctree() const { return worldOctree; }
+    void MakeOctree(FVector boundMin, FVector boundMax);
+    void CreateOctree();
+    void AddOctreeObject(UObject* OctreeObject);
+    void UpdateOctreeFromOctreeobjects();
 
     // EditorManager 같은데로 보내기
     AActor* GetSelectedActor() const { return SelectedActor; }

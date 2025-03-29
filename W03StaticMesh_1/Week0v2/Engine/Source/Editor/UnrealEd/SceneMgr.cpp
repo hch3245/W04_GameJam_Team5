@@ -253,6 +253,31 @@ void FSceneMgr::SpawnActorFromSceneData(const FString& jsonStr)
                     auto wStaticMeshName = staticMeshName.ToWideString();
                     MeshComp->SetStaticMesh(FManagerOBJ::GetStaticMesh(wStaticMeshName));
                     StaticMeshes.Add(StaticMeshActor);
+
+
+                     // 위치랑 Scale, Transform 고려하여 World 좌표계로 변경 MeshComp->AABB
+                    FMatrix scaleMatrix = FMatrix::CreateScale(
+                        MeshComp->GetWorldScale().x,
+                        MeshComp->GetWorldScale().y,
+                        MeshComp->GetWorldScale().z
+                    );
+
+                    FMatrix rotationMatrix = FMatrix::CreateRotation(
+                        MeshComp->GetWorldRotation().x,
+                        MeshComp->GetWorldRotation().y,
+                        MeshComp->GetWorldRotation().z
+                    );
+
+
+                    FMatrix translationMatrix = FMatrix::CreateTranslationMatrix( MeshComp->GetWorldLocation() * 1.0f);
+                    
+                    FMatrix worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
+
+                    FVector boundMin = FMatrix::TransformVector(MeshComp->AABB.min, worldMatrix);
+                    FVector boundMax = FMatrix::TransformVector(MeshComp->AABB.max, worldMatrix);
+                    
+                    StaticMeshActor->SetBoundingBox(FBoundingBox(boundMin, boundMax));
+                    World->AddOctreeObject(StaticMeshActor);
                 }
             }
 
@@ -285,6 +310,10 @@ void FSceneMgr::SpawnActorFromSceneData(const FString& jsonStr)
         if (cameraJson.contains("FarClip")) {
             ActiveViewportClient->farPlane = cameraJson["FarClip"][0];
         }
+
+
+        World->UpdateOctreeFromOctreeobjects();
+
     }
     catch (const std::exception& e) {
         FString errorMessage = "Error parsing JSON: ";

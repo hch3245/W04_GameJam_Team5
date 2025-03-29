@@ -18,6 +18,7 @@ class AEditorPlayer : public AActor
     void Input();
     bool PickGizmo(FVector& rayOrigin);
     bool PickActor(const FVector& pickPosition);
+    bool PickActorFromActors(const FVector& pickPosition, std::vector<UObject*> pickTestActors);
     void AddControlMode();
     void AddCoordiMode();
 

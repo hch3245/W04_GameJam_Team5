@@ -7,6 +7,7 @@ extern FEngineLoop GEngineLoop;
 class UClass;
 class UWorld;
 
+struct FBoundingBox;
 
 class UObject
 {
@@ -21,6 +22,10 @@ public:
     using ThisClass = UObject;
 
     static UClass* StaticClass();
+
+    FBoundingBox boundingBox;
+    void SetBoundingBox(const FVector& boundMin, const FVector& boundMax);
+    void SetBoundingBox(const FBoundingBox& inBoundingBox);
 
 private:
     friend class FObjectFactory;
