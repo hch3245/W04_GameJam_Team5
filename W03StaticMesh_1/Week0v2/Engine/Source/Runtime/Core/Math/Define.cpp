@@ -114,7 +114,7 @@ float FMatrix::Determinant(const FMatrix& Mat) {
 FMatrix FMatrix::Inverse(const FMatrix& Mat) {
     float det = Determinant(Mat);
     if (fabs(det) < 1e-6) {
-        return Identity;
+        return Identity;  // 역행렬이 존재하지 않으면 단위 행렬을 반환
     }
 
     FMatrix Inv;
@@ -125,6 +125,8 @@ FMatrix FMatrix::Inverse(const FMatrix& Mat) {
         for (int32 j = 0; j < 4; j++) {
             float subMat[3][3];
             int32 subRow = 0;
+
+            // 4x4 행렬에서 (i, j) 요소를 제외한 3x3 부행렬 계산
             for (int32 r = 0; r < 4; r++) {
                 if (r == i) continue;
                 int32 subCol = 0;
@@ -135,16 +137,21 @@ FMatrix FMatrix::Inverse(const FMatrix& Mat) {
                 }
                 subRow++;
             }
+
+            // 3x3 부행렬의 행렬식을 계산 (Minor determinant)
             float minorDet =
                 subMat[0][0] * (subMat[1][1] * subMat[2][2] - subMat[1][2] * subMat[2][1]) -
                 subMat[0][1] * (subMat[1][0] * subMat[2][2] - subMat[1][2] * subMat[2][0]) +
                 subMat[0][2] * (subMat[1][0] * subMat[2][1] - subMat[1][1] * subMat[2][0]);
 
+            // 여인수의 부호 처리
             Inv.M[j][i] = ((i + j) % 2 == 0 ? 1 : -1) * minorDet * invDet;
         }
     }
+
     return Inv;
 }
+
 
 FMatrix FMatrix::CreateRotation(float roll, float pitch, float yaw) {
     // Convert degrees to radians
