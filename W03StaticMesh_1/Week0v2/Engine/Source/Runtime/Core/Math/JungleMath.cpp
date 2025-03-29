@@ -54,10 +54,10 @@ FMatrix JungleMath::CreateProjectionMatrix(float fov, float aspect, float nearPl
 
     // Construct the projection matrix using SIMD
     return FMatrix{
-        _mm_setr_ps(m00, 0.0f, 0.0f, 0.0f), // First row
-        _mm_setr_ps(0.0f, m11, 0.0f, 0.0f), // Second row
-        _mm_setr_ps(0.0f, 0.0f, m22, 1.0f), // Third row
-        _mm_setr_ps(0.0f, 0.0f, m32, 0.0f)  // Fourth row
+        _mm_setr_ps(m00, 0.0f, 0.0f, 0.0f),
+        _mm_setr_ps(0.0f, m11, 0.0f, 0.0f),
+        _mm_setr_ps(0.0f, 0.0f, m22, 1.0f),
+        _mm_setr_ps(0.0f, 0.0f, m32, 0.0f) 
     };
 }
 
@@ -86,9 +86,9 @@ FVector JungleMath::FVectorRotate(FVector& origin, const FVector& rotation)
 }
 FQuat JungleMath::EulerToQuaternion(const FVector& eulerDegrees)
 {
-    float yaw = DegToRad(eulerDegrees.z);   // Z축 Yaw
-    float pitch = DegToRad(eulerDegrees.y); // Y축 Pitch
-    float roll = DegToRad(eulerDegrees.x);  // X축 Roll
+    float yaw = DegToRad(eulerDegrees.z);   
+    float pitch = DegToRad(eulerDegrees.y); 
+    float roll = DegToRad(eulerDegrees.x);  
 
     float halfYaw = yaw * 0.5f;
     float halfPitch = pitch * 0.5f;
@@ -110,6 +110,7 @@ FQuat JungleMath::EulerToQuaternion(const FVector& eulerDegrees)
     quat.Normalize();
     return quat;
 }
+
 FVector JungleMath::QuaternionToEuler(const FQuat& quat)
 {
     FVector euler;
@@ -127,7 +128,7 @@ FVector JungleMath::QuaternionToEuler(const FQuat& quat)
     float sinPitch = 2.0f * (q.w * q.y - q.z * q.x);
     if (fabs(sinPitch) >= 1.0f)
     {
-        euler.y = RadToDeg(static_cast<float>(copysign(PI / 2, sinPitch))); // 🔥 Gimbal Lock 방지
+        euler.y = RadToDeg(static_cast<float>(copysign(PI / 2, sinPitch))); // Gimbal Lock 방지
     }
     else
     {
@@ -140,6 +141,7 @@ FVector JungleMath::QuaternionToEuler(const FQuat& quat)
     euler.x = RadToDeg(atan2(sinRoll, cosRoll));
     return euler;
 }
+
 FVector JungleMath::FVectorRotate(FVector& origin, const FQuat& rotation)
 {
     return rotation.RotateVector(origin);
@@ -166,7 +168,6 @@ FMatrix JungleMath::CreateRotationMatrix(FVector rotation)
     }
     return result;
 }
-
 
 float JungleMath::RadToDeg(float radian)
 {
