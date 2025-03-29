@@ -20,6 +20,7 @@
 #include "PropertyEditor/ShowFlags.h"
 #include "UObject/UObjectIterator.h"
 #include "Components/SkySphereComponent.h"
+#include "UnrealEd/SceneMgr.h"
 
 void FRenderer::Initialize(FGraphicsDevice* graphics)
 {
@@ -200,8 +201,10 @@ void FRenderer::RenderPrimitive(OBJ::FStaticMeshRenderData* renderData, TArray<F
 
         subMeshIndex == selectedSubMeshIndex ? UpdateSubMeshConstant(true) : UpdateSubMeshConstant(false);
 
-        overrideMaterial[materialIndex] != nullptr ? 
-            UpdateMaterial(overrideMaterial[materialIndex]->GetMaterialInfo()) : UpdateMaterial(materials[materialIndex]->Material->GetMaterialInfo());
+        if (materialIndex < overrideMaterial.Num() && overrideMaterial[materialIndex] != nullptr)
+            UpdateMaterial(overrideMaterial[materialIndex]->GetMaterialInfo());
+        else
+            UpdateMaterial(materials[materialIndex]->Material->GetMaterialInfo());
 
         if (renderData->IndexBuffer)
         {
@@ -973,12 +976,12 @@ void FRenderer::PrepareRender()
 {
     for (const auto iter : TObjectRange<USceneComponent>())
     {
-        if (UStaticMeshComponent* pStaticMeshComp = Cast<UStaticMeshComponent>(iter))
-        {
-            if (!Cast<UGizmoBaseComponent>(iter))
-                StaticMeshObjs.Add(pStaticMeshComp);
-        }
-        if (UGizmoBaseComponent* pGizmoComp = Cast<UGizmoBaseComponent>(iter))
+        //if (UStaticMeshComponent* pStaticMeshComp = Cast<UStaticMeshComponent>(iter))
+        //{
+        //    if (!Cast<UGizmoBaseComponent>(iter))
+        //        StaticMeshObjs.Add(pStaticMeshComp);
+        //}
+        if (UGizmoBaseComponent* pGizmoComp = Cast<UGizmoBaseComponent>(iter))            
         {
             GizmoObjs.Add(pGizmoComp);
         }
@@ -1009,14 +1012,38 @@ void FRenderer::Render(UWorld* World, std::shared_ptr<FEditorViewportClient> Act
     UpdateLightBuffer();
     UPrimitiveBatch::GetInstance().RenderBatch(ActiveViewport->GetViewMatrix(), ActiveViewport->GetProjectionMatrix());
 
-    if (ActiveViewport->GetShowFlag() & static_cast<uint64>(EEngineShowFlags::SF_Primitives))
-        RenderStaticMeshes(World, ActiveViewport);
+    //if (ActiveViewport->GetShowFlag() & static_cast<uint64>(EEngineShowFlags::SF_Primitives))
+    //    RenderStaticMeshes(World, ActiveViewport);
+    RenderStaticMeshesBatch(World, ActiveViewport);
     RenderGizmos(World, ActiveViewport);
     if (ActiveViewport->GetShowFlag() & static_cast<uint64>(EEngineShowFlags::SF_BillboardText))
         RenderBillboards(World, ActiveViewport);
     RenderLight(World, ActiveViewport);
     
-    ClearRenderArr();
+    //ClearRenderArr();
+}
+
+void FRenderer::RenderStaticMeshesBatch(UWorld* World, std::shared_ptr<FEditorViewportClient> ActiveViewport) const
+{
+    PrepareShader();
+    const TArray<FStaticBatchData>& Batches = FSceneMgr::GetStaticBatches();
+    const TArray<OBJ::FStaticMeshRenderData*>& CachedData = FSceneMgr::GetCachedRenderData();
+
+    // Batches와 CachedData의 크기가 동일하다고 가정합니다.
+    for (int i = 0; i < Batches.Num(); i++)
+    {
+        const FStaticBatchData& Batch = Batches[i];
+        OBJ::FStaticMeshRenderData* pRenderData = CachedData[i];
+
+        // Model은 이미 배치 데이터에 반영되었으므로 Identity 사용
+        FMatrix Model = FMatrix::Identity;
+        FMatrix MVP = Model * ActiveViewport->GetViewMatrix() * ActiveViewport->GetProjectionMatrix();
+        FMatrix NormalMatrix = FMatrix::Transpose(FMatrix::Inverse(Model));
+        UpdateConstant(MVP, NormalMatrix, FVector4(0, 0, 0, 0), false);
+
+        // RenderPrimitive()는 OBJ::FStaticMeshRenderData*를 인자로 받으므로 pRenderData를 그대로 전달합니다.
+        RenderPrimitive(pRenderData, Batch.Materials, TArray<UMaterial*>(), 0);
+    }
 }
 
 void FRenderer::RenderStaticMeshes(UWorld* World, std::shared_ptr<FEditorViewportClient> ActiveViewport)
@@ -1037,16 +1064,16 @@ void FRenderer::RenderStaticMeshes(UWorld* World, std::shared_ptr<FEditorViewpor
         if (World->GetSelectedActor() == StaticMeshComp->GetOwner())
         {
             UpdateConstant(MVP, NormalMatrix, UUIDColor, true);
-        }
+}
         else
             UpdateConstant(MVP, NormalMatrix, UUIDColor, false);
 
         if (USkySphereComponent* skysphere = Cast<USkySphereComponent>(StaticMeshComp))
-        {
+{
             UpdateTextureConstant(skysphere->UOffset, skysphere->VOffset);
         }
         else
-        {
+    {
             UpdateTextureConstant(0, 0);
         }
 
@@ -1058,8 +1085,8 @@ void FRenderer::RenderStaticMeshes(UWorld* World, std::shared_ptr<FEditorViewpor
                 Model
             );
         }
-                
-    
+
+
         if (!StaticMeshComp->GetStaticMesh()) continue;
 
         OBJ::FStaticMeshRenderData* renderData = StaticMeshComp->GetStaticMesh()->GetRenderData();

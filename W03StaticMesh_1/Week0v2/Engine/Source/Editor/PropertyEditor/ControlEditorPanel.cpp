@@ -110,7 +110,7 @@ void ControlEditorPanel::CreateMenuButton(ImVec2 ButtonSize, ImFont* IconFont)
                 tinyfd_messageBox("Success", "파일을 확인했습니다. 불러오겠습니다.", "ok", "info", 1);
                 // TODO: Load Scene
                 FSceneMgr::SpawnActorFromSceneData(FSceneMgr::LoadSceneFromFile(FileName));
-
+                FSceneMgr::BuildStaticBatches();
                 ImGui::End();
                 return;
             }
