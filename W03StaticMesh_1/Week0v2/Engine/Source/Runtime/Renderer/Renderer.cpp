@@ -20,6 +20,7 @@
 #include "PropertyEditor/ShowFlags.h"
 #include "UObject/UObjectIterator.h"
 #include "Components/SkySphereComponent.h"
+#include "UnrealEd/SceneMgr.h"
 
 
 void FRenderer::Initialize(FGraphicsDevice* graphics)
@@ -203,7 +204,11 @@ void FRenderer::RenderPrimitive(OBJ::FStaticMeshRenderData* renderData, TArray<F
     for (int subMeshIndex = 0; subMeshIndex < renderData->MaterialSubsets.Num(); subMeshIndex++)
     {
         int materialIndex = renderData->MaterialSubsets[subMeshIndex].MaterialIndex;
-        UMaterial* CurrentMaterial = overrideMaterial[materialIndex] ? overrideMaterial[materialIndex] : materials[materialIndex]->Material;
+        UMaterial* CurrentMaterial;
+        if (materialIndex < overrideMaterial.Num() && overrideMaterial[materialIndex] != nullptr)
+            CurrentMaterial = overrideMaterial[materialIndex];
+        else
+            CurrentMaterial = materials[materialIndex]->Material;
 
         if (LastMaterial != CurrentMaterial)
         {
@@ -982,12 +987,12 @@ void FRenderer::PrepareRender()
 {
     for (const auto iter : TObjectRange<USceneComponent>())
     {
-        if (UStaticMeshComponent* pStaticMeshComp = Cast<UStaticMeshComponent>(iter))
-        {
-            if (!Cast<UGizmoBaseComponent>(iter))
-                StaticMeshObjs.Add(pStaticMeshComp);
-        }
-        if (UGizmoBaseComponent* pGizmoComp = Cast<UGizmoBaseComponent>(iter))
+        //if (UStaticMeshComponent* pStaticMeshComp = Cast<UStaticMeshComponent>(iter))
+        //{
+        //    if (!Cast<UGizmoBaseComponent>(iter))
+        //        StaticMeshObjs.Add(pStaticMeshComp);
+        //}
+        if (UGizmoBaseComponent* pGizmoComp = Cast<UGizmoBaseComponent>(iter))            
         {
             GizmoObjs.Add(pGizmoComp);
         }
@@ -1018,14 +1023,38 @@ void FRenderer::Render(UWorld* World, std::shared_ptr<FEditorViewportClient> Act
     UpdateLightBuffer();
     UPrimitiveBatch::GetInstance().RenderBatch(ActiveViewport->GetViewMatrix(), ActiveViewport->GetProjectionMatrix());
 
-    if (ActiveViewport->GetShowFlag() & static_cast<uint64>(EEngineShowFlags::SF_Primitives))
-        RenderStaticMeshes(World, ActiveViewport);
+    //if (ActiveViewport->GetShowFlag() & static_cast<uint64>(EEngineShowFlags::SF_Primitives))
+    //    RenderStaticMeshes(World, ActiveViewport);
+    RenderStaticMeshesBatch(World, ActiveViewport);
     RenderGizmos(World, ActiveViewport);
     if (ActiveViewport->GetShowFlag() & static_cast<uint64>(EEngineShowFlags::SF_BillboardText))
         RenderBillboards(World, ActiveViewport);
     RenderLight(World, ActiveViewport);
     
-    ClearRenderArr();
+    //ClearRenderArr();
+}
+
+void FRenderer::RenderStaticMeshesBatch(UWorld* World, std::shared_ptr<FEditorViewportClient> ActiveViewport)
+{
+    PrepareShader();
+    const TArray<FStaticBatchData>& Batches = FSceneMgr::GetStaticBatches();
+    const TArray<OBJ::FStaticMeshRenderData*>& CachedData = FSceneMgr::GetCachedRenderData();
+
+    // Batches와 CachedData의 크기가 동일하다고 가정합니다.
+    for (int i = 0; i < Batches.Num(); i++)
+    {
+        const FStaticBatchData& Batch = Batches[i];
+        OBJ::FStaticMeshRenderData* pRenderData = CachedData[i];
+
+        // Model은 이미 배치 데이터에 반영되었으므로 Identity 사용
+        FMatrix Model = FMatrix::Identity;
+        FMatrix MVP = Model * ActiveViewport->GetViewMatrix() * ActiveViewport->GetProjectionMatrix();
+        FMatrix NormalMatrix = FMatrix::Transpose(FMatrix::Inverse(Model));
+        UpdateConstant(MVP, NormalMatrix, FVector4(0, 0, 0, 0), false);
+
+        // RenderPrimitive()는 OBJ::FStaticMeshRenderData*를 인자로 받으므로 pRenderData를 그대로 전달합니다.
+        RenderPrimitive(pRenderData, Batch.Materials, TArray<UMaterial*>(), 0);
+    }
 }
 
 std::unordered_map<FStaticMaterial*, std::vector<UStaticMeshComponent*>> SortedMesh;
