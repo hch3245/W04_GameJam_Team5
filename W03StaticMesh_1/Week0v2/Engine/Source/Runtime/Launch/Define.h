@@ -249,6 +249,13 @@ struct FBoundingBox
         return true;
     }
 
+    bool BoxIntersect(const FVector& anotherMin, const FVector& anotherMax) 
+    {
+        return ((min.x < anotherMax.x) && (max.x > anotherMin.x) &&
+            (min.y < anotherMax.y) && (max.y > anotherMin.y) &&
+            (min.z < anotherMax.z) && (max.z > anotherMin.z));
+    }
+
 };
 struct FCone
 {
