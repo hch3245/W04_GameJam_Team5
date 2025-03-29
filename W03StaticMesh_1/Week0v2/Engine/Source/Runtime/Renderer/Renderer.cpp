@@ -1126,7 +1126,7 @@ void FRenderer::RenderStaticMeshes(UWorld* World, std::shared_ptr<FEditorViewpor
                 bool bVertexInside = true;  // 각 정점이 프러스텀 내에 있는지 여부
 
                 // 변환된 정점 계산
-                FVector TransformedVertex = MVP.TransformPosition(FVector(Vertex.x, Vertex.y, Vertex.z));
+                FVector TransformedVertex = Model.TransformPosition(FVector(Vertex.x, Vertex.y, Vertex.z));
 
                 // 각 평면에 대해 정점이 내부에 있는지 확인
                 for (int i = 0; i < 6; i++)

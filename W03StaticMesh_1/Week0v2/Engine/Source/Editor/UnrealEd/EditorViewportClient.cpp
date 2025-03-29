@@ -246,44 +246,49 @@ void FEditorViewportClient::ExtractFrustumPlanes()
 {
      ViewProjMatrix = View * Projection;
 
-  
+    // SIMD로 행렬을 로드
+    __m128 row0 = ViewProjMatrix.r[0];
 
-    // Left Plane (왼쪽 평면)
-    FrustrumPlanes[0].a = ViewProjMatrix[3][0] + ViewProjMatrix[2][0];
-    FrustrumPlanes[0].b = ViewProjMatrix[3][1] + ViewProjMatrix[2][1];
-    FrustrumPlanes[0].c = ViewProjMatrix[3][2] + ViewProjMatrix[2][2];
-    FrustrumPlanes[0].d = ViewProjMatrix[3][3] + ViewProjMatrix[2][3];
+    __m128 row1 = ViewProjMatrix.r[1];
+    
+    __m128 row2 = ViewProjMatrix.r[2];
+    __m128 row3 = ViewProjMatrix.r[3];
 
+    // 왼쪽 평면 (Left Plane)
+    FrustrumPlanes[0].a = row0.m128_f32[3] + row0.m128_f32[0];
+    FrustrumPlanes[0].b = row1.m128_f32[3] + row1.m128_f32[0];
+    FrustrumPlanes[0].c = row2.m128_f32[3] + row2.m128_f32[0];
+    FrustrumPlanes[0].d = row3.m128_f32[3] + row3.m128_f32[0];
 
     // 오른쪽 평면 (Right Plane)
-    FrustrumPlanes[1].a =  ViewProjMatrix[3][0] - ViewProjMatrix[2][0];
-    FrustrumPlanes[1].b =  ViewProjMatrix[3][1] - ViewProjMatrix[2][1];
-    FrustrumPlanes[1].c =  ViewProjMatrix[3][2] - ViewProjMatrix[2][2];
-    FrustrumPlanes[1].d =  ViewProjMatrix[3][3] - ViewProjMatrix[2][3];
+    FrustrumPlanes[1].a = row0.m128_f32[3] - row0.m128_f32[0];
+    FrustrumPlanes[1].b = row1.m128_f32[3] - row1.m128_f32[0];
+    FrustrumPlanes[1].c = row2.m128_f32[3] - row2.m128_f32[0];
+    FrustrumPlanes[1].d = row3.m128_f32[3] - row3.m128_f32[0];
 
     // 위쪽 평면 (Top Plane)
-    FrustrumPlanes[2].a = ViewProjMatrix[3][0]- ViewProjMatrix[0][0];
-    FrustrumPlanes[2].b = ViewProjMatrix[3][1]- ViewProjMatrix[0][1];
-    FrustrumPlanes[2].c = ViewProjMatrix[3][2]- ViewProjMatrix[0][2];
-    FrustrumPlanes[2].d = ViewProjMatrix[3][3]- ViewProjMatrix[0][3];
+    FrustrumPlanes[2].a = row0.m128_f32[3] - row0.m128_f32[1];
+    FrustrumPlanes[2].b = row1.m128_f32[3] - row1.m128_f32[1];
+    FrustrumPlanes[2].c = row2.m128_f32[3] - row2.m128_f32[1];
+    FrustrumPlanes[2].d = row3.m128_f32[3] - row3.m128_f32[1];
 
     // 아래쪽 평면 (Bottom Plane)
-    FrustrumPlanes[3].a =  ViewProjMatrix[3][0] + ViewProjMatrix[0][0];
-    FrustrumPlanes[3].b =  ViewProjMatrix[3][1] + ViewProjMatrix[0][1];
-    FrustrumPlanes[3].c =  ViewProjMatrix[3][2] + ViewProjMatrix[0][2];
-    FrustrumPlanes[3].d =  ViewProjMatrix[3][3] + ViewProjMatrix[0][3];
+    FrustrumPlanes[3].a = row0.m128_f32[3] + row0.m128_f32[1];
+    FrustrumPlanes[3].b = row1.m128_f32[3] + row1.m128_f32[1];
+    FrustrumPlanes[3].c = row2.m128_f32[3] + row2.m128_f32[1];
+    FrustrumPlanes[3].d = row3.m128_f32[3] + row3.m128_f32[1];
 
     // 가까운 평면 (Near Plane)
-    FrustrumPlanes[4].a =ViewProjMatrix[3][0] + ViewProjMatrix[1][0];
-    FrustrumPlanes[4].b =ViewProjMatrix[3][1] + ViewProjMatrix[1][1];
-    FrustrumPlanes[4].c =ViewProjMatrix[3][2] + ViewProjMatrix[1][2];
-    FrustrumPlanes[4].d =ViewProjMatrix[3][3] + ViewProjMatrix[1][3];
+    FrustrumPlanes[4].a = row0.m128_f32[2];
+    FrustrumPlanes[4].b = row1.m128_f32[2];
+    FrustrumPlanes[4].c = row2.m128_f32[2];
+    FrustrumPlanes[4].d = row3.m128_f32[2];
 
     // 먼 평면 (Far Plane)
-    FrustrumPlanes[5].a = ViewProjMatrix[3][0] - ViewProjMatrix[1][0];
-    FrustrumPlanes[5].b = ViewProjMatrix[3][1] - ViewProjMatrix[1][1];
-    FrustrumPlanes[5].c = ViewProjMatrix[3][2] - ViewProjMatrix[1][2];
-    FrustrumPlanes[5].d = ViewProjMatrix[3][3] - ViewProjMatrix[1][3];
+    FrustrumPlanes[5].a = row0.m128_f32[3] - row0.m128_f32[2];
+    FrustrumPlanes[5].b = row1.m128_f32[3] - row1.m128_f32[2];
+    FrustrumPlanes[5].c = row2.m128_f32[3] - row2.m128_f32[2];
+    FrustrumPlanes[5].d = row3.m128_f32[3] - row3.m128_f32[2];
 
     // 평면 법선 정규화
     for (int i = 0; i < 6; ++i)
