@@ -7,9 +7,9 @@ struct FMatrix
 {
     union {
         struct {
-            float M[4][4]; // 기존 배열 접근 방식
+            float M[4][4];
         };
-        __m128 r[4]; // SIMD 연산용 행 벡터
+        __m128 r[4];
     };
 
     FMatrix() {
