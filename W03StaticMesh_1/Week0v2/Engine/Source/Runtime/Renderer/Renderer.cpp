@@ -1033,17 +1033,17 @@ void FRenderer::RenderStaticMeshesBatch(UWorld* World, std::shared_ptr<FEditorVi
     const TArray<FStaticBatchData>& Batches = FSceneMgr::GetStaticBatches();
     const TArray<OBJ::FStaticMeshRenderData*>& CachedData = FSceneMgr::GetCachedRenderData();
 
+    // Model은 이미 배치 데이터에 반영되었으므로 Identity 사용
+    FMatrix Model = FMatrix::Identity;
+    FMatrix MVP = Model * ActiveViewport->GetViewMatrix() * ActiveViewport->GetProjectionMatrix();
+    FMatrix NormalMatrix = FMatrix::Transpose(FMatrix::Inverse(Model));
+    UpdateConstant(MVP, NormalMatrix, FVector4(0, 0, 0, 0), false);
+
     // Batches와 CachedData의 크기가 동일하다고 가정합니다.
     for (int i = 0; i < Batches.Num(); i++)
     {
         const FStaticBatchData& Batch = Batches[i];
         OBJ::FStaticMeshRenderData* pRenderData = CachedData[i];
-
-        // Model은 이미 배치 데이터에 반영되었으므로 Identity 사용
-        FMatrix Model = FMatrix::Identity;
-        FMatrix MVP = Model * ActiveViewport->GetViewMatrix() * ActiveViewport->GetProjectionMatrix();
-        FMatrix NormalMatrix = FMatrix::Transpose(FMatrix::Inverse(Model));
-        UpdateConstant(MVP, NormalMatrix, FVector4(0, 0, 0, 0), false);
 
         // RenderPrimitive()는 OBJ::FStaticMeshRenderData*를 인자로 받으므로 pRenderData를 그대로 전달합니다.
         RenderPrimitive(pRenderData, Batch.Materials, TArray<UMaterial*>(), 0);
