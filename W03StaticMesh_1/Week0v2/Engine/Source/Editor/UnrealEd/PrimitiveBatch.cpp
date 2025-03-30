@@ -44,10 +44,27 @@ void UPrimitiveBatch::RenderBatch(const FMatrix& View, const FMatrix& Projection
 
     if (bShowOctreeBoundBoxes) 
     {
-        for (auto& consistentBoundBox : OctreeBoundBoxes[showDepth]) {
-            BoundingBoxes.Add(consistentBoundBox);
+        for (auto& octreeBoundBox : OctreeBoundBoxes[showDepth]) {
+            BoundingBoxes.Add(octreeBoundBox);
         }
     }
+
+    if (bShowObjBoundBoxes) 
+    {
+        for (auto& octreeObjBoundBox : OctreeObjBoundBoxes) {
+            BoundingBoxes.Add(octreeObjBoundBox);
+        }
+    }
+    
+    if (bShowRayDetectBoundBoxes) 
+    {
+        for (auto& octreeRayDetectBoundBox : OctreeRayDetectBoundBoxes[showRayDetectDepth]) {
+            BoundingBoxes.Add(octreeRayDetectBoundBox);
+        }
+    }
+    
+
+
     
     FEngineLoop::renderer.PrepareLineShader();
 
@@ -232,6 +249,29 @@ void UPrimitiveBatch::AddOctreeAABB(const FBoundingBox& worldAABB, int inDepth)
     OctreeBoundBoxes[inDepth].Add(worldAABB);
 }
 
+void UPrimitiveBatch::AddOctreeObjAABB(const FBoundingBox& worldAABB)
+{
+    OctreeObjBoundBoxes.Add(worldAABB);
+}
+
+void UPrimitiveBatch::ClearOctreeObjAABB()
+{
+    OctreeObjBoundBoxes.Empty();
+}
+
+void UPrimitiveBatch::AddOctreeRayDetectAABB(const FBoundingBox& worldAABB, int inDepth)
+{
+    OctreeRayDetectBoundBoxes[inDepth].Add(worldAABB);
+}
+
+void UPrimitiveBatch::ClearOctreeRayDetectAABB()
+{
+    for (auto& octreeRayDetectAABB : OctreeRayDetectBoundBoxes) 
+    {
+        octreeRayDetectAABB.Empty();
+    }
+}
+
 void UPrimitiveBatch::SetShowConsistentBoundBoxes(bool showConsistentBoundBoxes)
 {
     bShowConsistentBoundBoxes = showConsistentBoundBoxes;
@@ -242,8 +282,23 @@ void UPrimitiveBatch::SetShowOctreeBoundBoxes(bool showOctreeBoundBoxes)
     bShowOctreeBoundBoxes = showOctreeBoundBoxes;
 }
 
+void UPrimitiveBatch::SetShowOctreeObjBoundBoxes(bool showOctreeObjBoundBoxes)
+{
+    bShowObjBoundBoxes = showOctreeObjBoundBoxes;
+}
+
+void UPrimitiveBatch::SetShowRayDetectBoundBoxes(bool showRayDetectBoundBoxes)
+{
+    bShowRayDetectBoundBoxes = showRayDetectBoundBoxes;
+}
+
 void UPrimitiveBatch::SetShowDepth(int inShowDepth)
 {
     showDepth = inShowDepth;
+}
+
+void UPrimitiveBatch::SetShowRayDetectDepth(int inShowDetectDepth)
+{
+    showRayDetectDepth = inShowDetectDepth;
 }
 

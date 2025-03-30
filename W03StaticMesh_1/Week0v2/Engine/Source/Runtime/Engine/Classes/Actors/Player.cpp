@@ -18,7 +18,10 @@
 #include <WindowsPlatformTime.h>
 #include "Core/Math/Octree.h"
 #include "Engine/Classes/Engine/StaticMeshActor.h"
+
+
 #include <DirectXMath.h>
+#include "UnrealEd/PrimitiveBatch.h"
 
 AEditorPlayer::AEditorPlayer()
 {
@@ -68,8 +71,8 @@ void AEditorPlayer::Input()
 
             const auto& ActiveViewport = GetEngine().GetLevelEditor()->GetActiveViewportClient();
             ScreenToViewSpace(mousePos.x, mousePos.y, ActiveViewport->GetViewMatrix(), ActiveViewport->GetProjectionMatrix(), pickPosition);
-            bool res = PickGizmo(pickPosition);
-
+            /*bool res = PickGizmo(pickPosition);*/
+            bool res = false;
             if (!res)
             {
                 FMatrix viewMatrix = GEngineLoop.GetLevelEditor()->GetActiveViewportClient()->GetViewMatrix();
@@ -98,8 +101,17 @@ void AEditorPlayer::Input()
                 FVector transformedPick = inverseMatrix.TransformPosition(pickPosition);
                 FVector rayDirection =(transformedPick - pickRayOrigin).Normalize();
 
+                // TODO: 최적화 위해 아래 코드들 제거 필요
+                UPrimitiveBatch::GetInstance().ClearOctreeRayDetectAABB();
+
                 std::vector<UObject*> pickedObjects = world->GetOctree()->RayCast(pickRayOrigin, rayDirection);
 
+                // TODO: 최적화 위해 아래 코드들 제거 필요
+                
+                UPrimitiveBatch::GetInstance().ClearOctreeObjAABB();
+                for (auto& pickedObject : pickedObjects) {
+                    UPrimitiveBatch::GetInstance().AddOctreeObjAABB(pickedObject->boundingBox);
+                }
                 UE_LOG(LogLevel::Display, TEXT("Detect %d OCtree Objects"), pickedObjects.size());
 
                 bool isSuceed = PickActorFromActors(pickPosition, pickedObjects);
