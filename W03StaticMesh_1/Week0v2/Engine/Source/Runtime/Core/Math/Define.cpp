@@ -223,13 +223,13 @@ FMatrix FMatrix::CreateTranslationMatrix(const FVector& position) {
 }
 
 FVector FMatrix::TransformVector(const FVector& v, const FMatrix& m) {
-    __m128 vec = _mm_setr_ps(v.x, v.y, v.z, 0.0f);
+    __m128 vec = _mm_setr_ps(v.x, v.y, v.z, 1.0f);
 
     __m128 x = _mm_mul_ps(_mm_shuffle_ps(vec, vec, _MM_SHUFFLE(0, 0, 0, 0)), m.r[0]);
     __m128 y = _mm_mul_ps(_mm_shuffle_ps(vec, vec, _MM_SHUFFLE(1, 1, 1, 1)), m.r[1]);
     __m128 z = _mm_mul_ps(_mm_shuffle_ps(vec, vec, _MM_SHUFFLE(2, 2, 2, 2)), m.r[2]);
 
-    __m128 result = _mm_add_ps(_mm_add_ps(x, y), z);
+    __m128 result = _mm_add_ps(_mm_add_ps(_mm_add_ps(x, y), z), m.r[3]);
 
     alignas(16) float arr[4];
     _mm_store_ps(arr, result);
