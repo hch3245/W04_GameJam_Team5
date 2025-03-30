@@ -143,7 +143,6 @@ void FEngineLoop::Render()
         // RenderWorld();
         renderer.PrepareRender();
         renderer.Render(GetWorld(),LevelEditor->GetActiveViewportClient());
-    
 }
 
 void FEngineLoop::Tick()
