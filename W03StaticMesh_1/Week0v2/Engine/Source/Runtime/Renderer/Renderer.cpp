@@ -1017,7 +1017,7 @@ void FRenderer::Render(UWorld* World, std::shared_ptr<FEditorViewportClient> Act
     UPrimitiveBatch::GetInstance().RenderBatch(ActiveViewport->GetViewMatrix(), ActiveViewport->GetProjectionMatrix());
 
     //if (ActiveViewport->GetShowFlag() & static_cast<uint64>(EEngineShowFlags::SF_Primitives))
-    //    RenderStaticMeshes(World, ActiveViewport);
+        //RenderStaticMeshes(World, ActiveViewport);
     RenderStaticMeshesBatch(World, ActiveViewport);
     RenderGizmos(World, ActiveViewport);
     if (ActiveViewport->GetShowFlag() & static_cast<uint64>(EEngineShowFlags::SF_BillboardText))
@@ -1184,9 +1184,55 @@ void FRenderer::RenderStaticMeshes(UWorld* World, std::shared_ptr<FEditorViewpor
                 RenderPrimitive(renderData, StaticMeshComp->GetStaticMesh()->GetMaterials(),
                     StaticMeshComp->GetOverrideMaterials(), StaticMeshComp->GetselectedSubMeshIndex());
             }
-
         }
     }
+}
+
+bool FRenderer::DoFrustrumCull(OBJ::FStaticMeshRenderData* RenderData, std::shared_ptr<FEditorViewportClient> ActiveViewport)
+{
+    ActiveViewport->ExtractFrustumPlanes();
+
+    bool bInsideFrustum = false;  // 기본적으로 메시가 프러스텀 외부에 있다고 간주
+
+    FVector Vertex(
+        (RenderData->BoundingBoxMax.x - RenderData->BoundingBoxMin.x) / 2.0f,
+        (RenderData->BoundingBoxMax.y - RenderData->BoundingBoxMin.y) / 2.0f,
+        (RenderData->BoundingBoxMax.z - RenderData->BoundingBoxMin.z) / 2.0f
+    );
+
+    // 메시의 각 정점들을 순회
+    {
+        bool bVertexInside = true;  // 각 정점이 프러스텀 내에 있는지 여부
+
+        // 변환된 정점 계산
+        FVector TransformedVertex = FMatrix::Identity.TransformPosition(Vertex);
+
+        // 각 평면에 대해 정점이 내부에 있는지 확인
+        for (int i = 0; i < 6; i++)
+        {
+            // 평면 방정식에 정점 좌표를 대입하여 계산
+            float result = ActiveViewport->FrustrumPlanes[i].a * TransformedVertex.x
+                + ActiveViewport->FrustrumPlanes[i].b * TransformedVertex.y
+                + ActiveViewport->FrustrumPlanes[i].c * TransformedVertex.z
+                + ActiveViewport->FrustrumPlanes[i].d;
+
+            // 점이 프러스텀 외부에 있으면 그 정점은 프러스텀 바깥
+            if (result < 0.0f)
+            {
+                bVertexInside = false;  // 정점이 바깥에 있으면 더 이상 검사할 필요 없음
+                //break;
+            }
+        }
+
+        // 하나라도 내부에 있는 정점이 있으면 메시를 렌더링
+        if (bVertexInside)
+        {
+            bInsideFrustum = true;  // 메시가 프러스텀 내에 있음을 의미
+            //break;  // 하나라도 내부에 있으면 메시를 렌더링 가능
+        }
+    }
+
+    return bInsideFrustum;
 }
 
 
