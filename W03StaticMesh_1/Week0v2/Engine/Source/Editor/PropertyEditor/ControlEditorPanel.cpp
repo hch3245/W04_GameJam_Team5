@@ -371,10 +371,35 @@ void ControlEditorPanel::CreateModifyButton(ImVec2 ButtonSize, ImFont* IconFont)
            
                         FSceneMgr::StaticMeshes.Add(StaticMeshActor);
                         
-                        
+                        // 위치랑 Scale, Transform 고려하여 World 좌표계로 변경 MeshComp->AABB
+                        FMatrix scaleMatrix = FMatrix::CreateScale(
+                            MeshComp->GetWorldScale().x,
+                            MeshComp->GetWorldScale().y,
+                            MeshComp->GetWorldScale().z
+                        );
+
+                        FMatrix rotationMatrix = FMatrix::CreateRotation(
+                            MeshComp->GetWorldRotation().x,
+                            MeshComp->GetWorldRotation().y,
+                            MeshComp->GetWorldRotation().z
+                        );
+
+
+                        FMatrix translationMatrix = FMatrix::CreateTranslationMatrix(MeshComp->GetWorldLocation() * 1.0f);
+
+                        FMatrix worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
+
+                        FVector boundMin = FMatrix::TransformVector(MeshComp->AABB.min, worldMatrix);
+                        FVector boundMax = FMatrix::TransformVector(MeshComp->AABB.max, worldMatrix);
+
+                        FBoundingBox boundBOX = FBoundingBox(boundMin, boundMax);
+                        StaticMeshActor->SetBoundingBox(boundBOX);
+                        World->AddOctreeObject(StaticMeshActor);
+                        UPrimitiveBatch::GetInstance().AddAABB(StaticMeshActor->boundingBox);
                     }
                 }
             }
+            World->UpdateOctreeFromOctreeobjects();
             FSceneMgr::BuildStaticBatches();
         }
         ImGui::EndPopup();

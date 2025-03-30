@@ -28,7 +28,8 @@ public:
     void RenderOBB(const FBoundingBox& localAABB, const FVector& center, const FMatrix& modelMatrix);
 	
     void AddCone(const FVector& center, float radius, float height, int segments,const FVector4& color, const FMatrix& modelMatri);
-	
+    void AddAABB(const FBoundingBox& localAABB);
+
     // 복사 생성자 및 대입 연산자 삭제
     UPrimitiveBatch(const UPrimitiveBatch&) = delete;
     UPrimitiveBatch& operator=(const UPrimitiveBatch&) = delete;
@@ -48,6 +49,8 @@ private:
     TArray<FOBB> OrientedBoundingBoxes;
     TArray<FCone> Cones;
     FGridParameters GridParam;
+
+    TArray<FBoundingBox> ConsistentBoundBoxes;
     int ConeSegmentCount = 0;
 
 };

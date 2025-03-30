@@ -35,6 +35,9 @@ void UPrimitiveBatch::GenerateGrid(float spacing, int gridCount)
 
 void UPrimitiveBatch::RenderBatch(const FMatrix& View, const FMatrix& Projection)
 {
+    for (auto& consistentBoundBox : ConsistentBoundBoxes) {
+        BoundingBoxes.Add(consistentBoundBox);
+    }
     FEngineLoop::renderer.PrepareLineShader();
 
     InitializeVertexBuffer();
@@ -52,7 +55,8 @@ void UPrimitiveBatch::RenderBatch(const FMatrix& View, const FMatrix& Projection
     int coneSize = static_cast<int>(Cones.Num());
     int obbSize = static_cast<int>(OrientedBoundingBoxes.Num());
     FEngineLoop::renderer.UpdateLinePrimitveCountBuffer(boundingBoxSize, coneSize);
-    //FEngineLoop::renderer.RenderBatch(GridParam, pVertexBuffer, boundingBoxSize, coneSize, ConeSegmentCount, obbSize);
+    FEngineLoop::renderer.RenderBatch(GridParam, pVertexBuffer, boundingBoxSize, coneSize, ConeSegmentCount, obbSize);
+    
     BoundingBoxes.Empty();
     Cones.Empty();
     OrientedBoundingBoxes.Empty();
@@ -205,5 +209,10 @@ void UPrimitiveBatch::AddCone(const FVector& center, float radius, float height,
     cone.Color = color;
     cone.ConeSegmentCount = ConeSegmentCount;
     Cones.Add(cone);
+}
+
+void UPrimitiveBatch::AddAABB(const FBoundingBox& worldAABB)
+{
+    ConsistentBoundBoxes.Add(worldAABB);
 }
 
