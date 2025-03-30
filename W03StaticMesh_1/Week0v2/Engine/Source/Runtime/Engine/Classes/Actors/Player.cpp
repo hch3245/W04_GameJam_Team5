@@ -47,7 +47,7 @@ void AEditorPlayer::Input()
 
             POINT mousePos;
             GetCursorPos(&mousePos);
-            GetCursorPos(&m_LastMousePos);
+            //GetCursorPos(&m_LastMousePos);
 
             UWorld* world = GEngineLoop.GetWorld();
 

@@ -292,20 +292,20 @@ struct FLighting
 struct FMaterialConstants {
     FVector DiffuseColor;
     float TransparencyScalar;
-    FVector AmbientColor;
-    float DensityScalar;
-    FVector SpecularColor;
-    float SpecularScalar;
-    FVector EmmisiveColor;
-    float MaterialPad0;
+    //FVector AmbientColor;
+    //float DensityScalar;
+    //FVector SpecularColor;
+    //float SpecularScalar;
+    //FVector EmmisiveColor;
+    //float MaterialPad0;
 };
 
 struct FConstants {
     FMatrix MVP;      // 모델
-    FMatrix ModelMatrixInverseTranspose; // normal 변환을 위한 행렬
-    FVector4 UUIDColor;
-    bool IsSelected;
-    FVector pad;
+    //FMatrix ModelMatrixInverseTranspose; // normal 변환을 위한 행렬
+    //FVector4 UUIDColor;
+    //bool IsSelected;
+    //FVector pad;
 };
 struct FLitUnlitConstants {
     int isLit; // 1 = Lit, 0 = Unlit 
