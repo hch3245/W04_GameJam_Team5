@@ -18,6 +18,8 @@
 #include "UnrealEd/SceneMgr.h"
 #include "World.h"
 
+#include "UnrealEd/PrimitiveBatch.h"
+
 void ControlEditorPanel::Render()
 {
     /* Pre Setup */
@@ -366,9 +368,14 @@ void ControlEditorPanel::CreateModifyButton(ImVec2 ButtonSize, ImFont* IconFont)
                         UStaticMeshComponent* MeshComp = StaticMeshActor->GetStaticMeshComponent();
                        
                         MeshComp->SetStaticMesh(FManagerOBJ::GetStaticMesh(L"apple_mid.obj"));
+           
+                        FSceneMgr::StaticMeshes.Add(StaticMeshActor);
+                        
+                        
                     }
                 }
             }
+            FSceneMgr::BuildStaticBatches();
         }
         ImGui::EndPopup();
     }
