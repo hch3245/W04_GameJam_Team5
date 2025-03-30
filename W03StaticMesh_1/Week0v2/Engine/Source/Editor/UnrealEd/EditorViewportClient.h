@@ -14,6 +14,19 @@
 extern FEngineLoop GEngineLoop;
 
 
+struct Plane {
+    float a, b, c, d; // 평면의 방정식 계수 (ax + by + cz + d = 0)
+
+    void Normalize() {
+        float length = sqrtf(a * a + b * b + c * c);  // 법선 벡터의 크기 계산
+        if (length > 1e-6f) {  // 크기가 너무 작으면 정규화하지 않음
+            a /= length;
+            b /= length;
+            c /= length;
+        }
+    }
+};
+
 
 struct FViewportCameraTransform
 {
@@ -26,6 +39,8 @@ public:
     FVector GetUpVector();
 
 public:
+  
+
     FViewportCameraTransform();
 
     /** Sets the transform's location */
@@ -142,6 +157,11 @@ public: //Camera Movement
     void PivotMoveRight(float _Value);
     void PivotMoveUp(float _Value);
 
+    Plane FrustrumPlanes[6];
+    void ExtractFrustumPlanes();
+
+    Plane ExtractPlane(const FMatrix& matrix, int row1, int row2);
+   
     FMatrix& GetViewMatrix() { return  View; }
     FMatrix& GetProjectionMatrix() { return Projection; }
     void UpdateViewMatrix();
@@ -177,6 +197,9 @@ public:
     PROPERTY(float, GridSize)
     float GetCameraSpeedScalar() const { return CameraSpeedScalar; };
     void SetCameraSpeedScalar(float value);
+
+
+
 
 private:
     template <typename T>

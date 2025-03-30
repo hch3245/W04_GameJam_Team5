@@ -20,6 +20,7 @@ class UBillboardComponent;
 class UStaticMeshComponent;
 class UGizmoBaseComponent;
 
+struct Plane;
 
 class FRenderer 
 {
@@ -47,7 +48,7 @@ public:
 
     UMaterial* LastMaterial = nullptr;
     bool bShaderInitialized = false;
-
+ 
 
 
 public:
@@ -150,6 +151,7 @@ public: // line shader
     void Render(UWorld* World, std::shared_ptr<FEditorViewportClient> ActiveViewport);
     void RenderStaticMeshesBatch(UWorld* World, std::shared_ptr<FEditorViewportClient> ActiveViewport);
     void RenderStaticMeshes(UWorld* World, std::shared_ptr<FEditorViewportClient> ActiveViewport);
+    bool DoFrustrumCull(OBJ::FStaticMeshRenderData* RenderData, std::shared_ptr<FEditorViewportClient> ActiveViewport);
     void RenderGizmos(const UWorld* World, const std::shared_ptr<FEditorViewportClient>& ActiveViewport);
     void RenderLight(UWorld* World, std::shared_ptr<FEditorViewportClient> ActiveViewport);
     void RenderBillboards(UWorld* World,std::shared_ptr<FEditorViewportClient> ActiveViewport);
