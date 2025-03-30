@@ -41,11 +41,11 @@ void AEditorPlayer::Input()
 
             POINT mousePos;
             GetCursorPos(&mousePos);
-            GetCursorPos(&m_LastMousePos);
+            //GetCursorPos(&m_LastMousePos);
 
             UWorld* world = GEngineLoop.GetWorld();
 
-            uint32 UUID = GetEngine().graphicDevice.GetPixelUUID(mousePos);
+            //uint32 UUID = GetEngine().graphicDevice.GetPixelUUID(mousePos);
             // TArray<UObject*> objectArr = GetWorld()->GetObjectArr();
             
             

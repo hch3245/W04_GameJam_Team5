@@ -30,9 +30,9 @@ void FRenderer::Initialize(FGraphicsDevice* graphics)
     CreateTextureShader();
     CreateLineShader();
     CreateConstantBuffer();
-    CreateLightingBuffer();
-    CreateLitUnlitBuffer();
-    UpdateLitUnlitConstant(1);
+    //CreateLightingBuffer();
+    //CreateLitUnlitBuffer();
+    //UpdateLitUnlitConstant(1);
 }
 
 void FRenderer::Release()
@@ -177,23 +177,11 @@ void FRenderer::RenderPrimitive(ID3D11Buffer* pVertexBuffer, UINT numVertices, I
     Graphics->DeviceContext->DrawIndexed(numIndices, 0, 0);
 }
 
-ID3D11Buffer* PreviousVertexBuffer;
-
-ID3D11Buffer* PreviousIndexBuffer;
-
 void FRenderer::RenderPrimitive(OBJ::FStaticMeshRenderData* renderData, TArray<FStaticMaterial*> materials, TArray<UMaterial*> overrideMaterial, int selectedSubMeshIndex = -1) 
 {
     UINT offset = 0;
-
-    if (PreviousVertexBuffer != renderData->VertexBuffer) {
-        Graphics->DeviceContext->IASetVertexBuffers(0, 1, &renderData->VertexBuffer, &Stride, &offset);
-        PreviousVertexBuffer = renderData->VertexBuffer;
-    }
-    if (PreviousIndexBuffer != renderData->IndexBuffer) {
-        Graphics->DeviceContext->IASetIndexBuffer(renderData->IndexBuffer, DXGI_FORMAT_R32_UINT, 0);
-        PreviousIndexBuffer = renderData->IndexBuffer;
-    }
-
+    Graphics->DeviceContext->IASetVertexBuffers(0, 1, &renderData->VertexBuffer, &Stride, &offset);
+    Graphics->DeviceContext->IASetIndexBuffer(renderData->IndexBuffer, DXGI_FORMAT_R32_UINT, 0);
     for (int subMeshIndex = 0; subMeshIndex < renderData->MaterialSubsets.Num(); subMeshIndex++)
     {
         int materialIndex = renderData->MaterialSubsets[subMeshIndex].MaterialIndex;
@@ -214,11 +202,6 @@ void FRenderer::RenderPrimitive(OBJ::FStaticMeshRenderData* renderData, TArray<F
         Graphics->DeviceContext->DrawIndexed(indexCount, startIndex, 0);
     }
 }
-
-
-
-
-
 
 void FRenderer::RenderTexturedModelPrimitive(
     ID3D11Buffer* pVertexBuffer, UINT numVertices, ID3D11Buffer* pIndexBuffer, UINT numIndices, ID3D11ShaderResourceView* InTextureSRV,
@@ -448,9 +431,9 @@ void FRenderer::UpdateConstant(const FMatrix& MVP, const FMatrix& NormalMatrix, 
         {
             FConstants* constants = static_cast<FConstants*>(ConstantBufferMSR.pData);
             constants->MVP = MVP;
-            constants->ModelMatrixInverseTranspose = NormalMatrix;
-            constants->UUIDColor = UUIDColor;
-            constants->IsSelected = IsSelected;
+            //constants->ModelMatrixInverseTranspose = NormalMatrix;
+            //constants->UUIDColor = UUIDColor;
+            //constants->IsSelected = IsSelected;
         }
         Graphics->DeviceContext->Unmap(ConstantBuffer, 0); // GPU�� �ٽ� ��밡���ϰ� �����
     }
@@ -467,11 +450,11 @@ void FRenderer::UpdateMaterial(const FObjMaterialInfo& MaterialInfo) const
             FMaterialConstants* constants = static_cast<FMaterialConstants*>(ConstantBufferMSR.pData);
             constants->DiffuseColor = MaterialInfo.Diffuse;
             constants->TransparencyScalar = MaterialInfo.TransparencyScalar;
-            constants->AmbientColor = MaterialInfo.Ambient;
-            constants->DensityScalar = MaterialInfo.DensityScalar;
-            constants->SpecularColor = MaterialInfo.Specular;
-            constants->SpecularScalar = MaterialInfo.SpecularScalar;
-            constants->EmmisiveColor = MaterialInfo.Emissive;
+            //constants->AmbientColor = MaterialInfo.Ambient;
+            //constants->DensityScalar = MaterialInfo.DensityScalar;
+            //constants->SpecularColor = MaterialInfo.Specular;
+            //constants->SpecularScalar = MaterialInfo.SpecularScalar;
+            //constants->EmmisiveColor = MaterialInfo.Emissive;
         }
         Graphics->DeviceContext->Unmap(MaterialConstantBuffer, 0); // GPU�� �ٽ� ��밡���ϰ� �����
     }
@@ -1013,16 +996,16 @@ void FRenderer::Render(UWorld* World, std::shared_ptr<FEditorViewportClient> Act
     Graphics->DeviceContext->RSSetViewports(1, &ActiveViewport->GetD3DViewport());
     Graphics->ChangeRasterizer(ActiveViewport->GetViewMode());
     ChangeViewMode(ActiveViewport->GetViewMode());
-    UpdateLightBuffer();
-    UPrimitiveBatch::GetInstance().RenderBatch(ActiveViewport->GetViewMatrix(), ActiveViewport->GetProjectionMatrix());
+    //UpdateLightBuffer();
+    //UPrimitiveBatch::GetInstance().RenderBatch(ActiveViewport->GetViewMatrix(), ActiveViewport->GetProjectionMatrix());
 
     //if (ActiveViewport->GetShowFlag() & static_cast<uint64>(EEngineShowFlags::SF_Primitives))
-        //RenderStaticMeshes(World, ActiveViewport);
+    //    RenderStaticMeshes(World, ActiveViewport);
     RenderStaticMeshesBatch(World, ActiveViewport);
-    RenderGizmos(World, ActiveViewport);
-    if (ActiveViewport->GetShowFlag() & static_cast<uint64>(EEngineShowFlags::SF_BillboardText))
-        RenderBillboards(World, ActiveViewport);
-    RenderLight(World, ActiveViewport);
+    //RenderGizmos(World, ActiveViewport);
+    //if (ActiveViewport->GetShowFlag() & static_cast<uint64>(EEngineShowFlags::SF_BillboardText))
+    //    RenderBillboards(World, ActiveViewport);
+    //RenderLight(World, ActiveViewport);
     
     //ClearRenderArr();
 }

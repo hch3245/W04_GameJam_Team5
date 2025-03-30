@@ -141,7 +141,7 @@ void FEngineLoop::Render()
         // renderer.PrepareShader();
         // renderer.UpdateLightBuffer();
         // RenderWorld();
-        renderer.PrepareRender();
+        //renderer.PrepareRender();
         renderer.Render(GetWorld(),LevelEditor->GetActiveViewportClient());
 }
 
@@ -177,7 +177,7 @@ void FEngineLoop::Tick()
         LevelEditor->Tick(elapsedTime);
         Render();
         UIMgr->BeginFrame();
-         UnrealEditor->Render();
+        UnrealEditor->Render();
 
         Console::GetInstance().Draw();
         StatPanel::GetInstance().Draw();
