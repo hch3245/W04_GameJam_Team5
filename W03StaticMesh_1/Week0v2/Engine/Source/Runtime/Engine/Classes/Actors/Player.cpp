@@ -18,6 +18,7 @@
 #include <WindowsPlatformTime.h>
 #include "Core/Math/Octree.h"
 #include "Engine/Classes/Engine/StaticMeshActor.h"
+#include <DirectXMath.h>
 
 AEditorPlayer::AEditorPlayer()
 {
@@ -28,6 +29,8 @@ void AEditorPlayer::Tick(float DeltaTime)
     Super::Tick(DeltaTime);
     Input();
 }
+
+using namespace DirectX;
 
 void AEditorPlayer::Input()
 {
@@ -45,7 +48,7 @@ void AEditorPlayer::Input()
 
             UWorld* world = GEngineLoop.GetWorld();
 
-            uint32 UUID = GetEngine().graphicDevice.GetPixelUUID(mousePos);
+            //uint32 UUID = GetEngine().graphicDevice.GetPixelUUID(mousePos);
             // TArray<UObject*> objectArr = GetWorld()->GetObjectArr();
             
             
@@ -66,19 +69,38 @@ void AEditorPlayer::Input()
             const auto& ActiveViewport = GetEngine().GetLevelEditor()->GetActiveViewportClient();
             ScreenToViewSpace(mousePos.x, mousePos.y, ActiveViewport->GetViewMatrix(), ActiveViewport->GetProjectionMatrix(), pickPosition);
             bool res = PickGizmo(pickPosition);
+
             if (!res)
             {
                 FMatrix viewMatrix = GEngineLoop.GetLevelEditor()->GetActiveViewportClient()->GetViewMatrix();
-                FMatrix inverseMatrix = FMatrix::Inverse(viewMatrix);
-                FVector cameraOrigin = { 0,0,0 };
-                FVector pickRayOrigin = inverseMatrix.TransformPosition(cameraOrigin);
+                
+                
+                DirectX::XMMATRIX xm = XMMatrixSet(
+                    viewMatrix.M[0][0], viewMatrix.M[0][1], viewMatrix.M[0][2], viewMatrix.M[0][3],
+                    viewMatrix.M[1][0], viewMatrix.M[1][1], viewMatrix.M[1][2], viewMatrix.M[1][3],
+                    viewMatrix.M[2][0], viewMatrix.M[2][1], viewMatrix.M[2][2], viewMatrix.M[2][3],
+                    viewMatrix.M[3][0], viewMatrix.M[3][1], viewMatrix.M[3][2], viewMatrix.M[3][3]
+                    );
+
+                XMMATRIX directInverse = DirectX::XMMatrixInverse(nullptr, xm);
+
+                DirectX::XMFLOAT4X4 temp;
+                DirectX::XMStoreFloat4x4(&temp, directInverse);
+
+                FMatrix inverseMatrix(
+                    _mm_loadu_ps(temp.m[0]),
+                    _mm_loadu_ps(temp.m[1]),
+                    _mm_loadu_ps(temp.m[2]),
+                    _mm_loadu_ps(temp.m[3])
+                );
+
+                FVector pickRayOrigin = GEngineLoop.GetLevelEditor()->GetActiveViewportClient()->ViewTransformPerspective.ViewLocation;
                 FVector transformedPick = inverseMatrix.TransformPosition(pickPosition);
-                FVector rayDirection = (transformedPick - pickRayOrigin).Normalize();
+                FVector rayDirection =(transformedPick - pickRayOrigin).Normalize();
 
-
-                UE_LOG(LogLevel::Display, std::to_string(world->GetOctree()->objectCount).c_str() );
                 std::vector<UObject*> pickedObjects = world->GetOctree()->RayCast(pickRayOrigin, rayDirection);
 
+                UE_LOG(LogLevel::Display, TEXT("Detect %d OCtree Objects"), pickedObjects.size());
 
                 bool isSuceed = PickActorFromActors(pickPosition, pickedObjects);
 
@@ -92,6 +114,9 @@ void AEditorPlayer::Input()
                     PickAttemps += 1;
                     // 7) 성능 시간 출력
                     UE_LOG(LogLevel::Display, TEXT("Picking Time %.3f ms Num Attempts %d Accumulated Time %.3f ms "), PickingTime, PickAttemps, AccumulatedTime);
+                }
+                else {
+                    UE_LOG(LogLevel::Display, TEXT("Picking Fail"));
                 }
 
             }
@@ -428,6 +453,61 @@ int AEditorPlayer::RayIntersectsObject(const FVector& pickPosition, USceneCompon
         FVector rayDirection = (transformedPick - pickRayOrigin).Normalize();
         
         intersectCount = obj->CheckRayIntersection(pickRayOrigin, rayDirection, hitDistance);
+        return intersectCount;
+    }
+}
+
+int AEditorPlayer::RayIntersectsObject(const FVector& pickPosition, UStaticMeshComponent* staticMeshComp, float& hitDistance, int& intersectCount)
+{
+    FMatrix scaleMatrix = FMatrix::CreateScale(
+        staticMeshComp->GetWorldScale().x,
+        staticMeshComp->GetWorldScale().y,
+        staticMeshComp->GetWorldScale().z
+    );
+    FMatrix rotationMatrix = FMatrix::CreateRotation(
+        staticMeshComp->GetWorldRotation().x,
+        staticMeshComp->GetWorldRotation().y,
+        staticMeshComp->GetWorldRotation().z
+    );
+
+    FMatrix translationMatrix = FMatrix::CreateTranslationMatrix(staticMeshComp->GetWorldLocation());
+
+    // ���� ��ȯ ���
+    FMatrix worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
+    FMatrix viewMatrix = GEngineLoop.GetLevelEditor()->GetActiveViewportClient()->GetViewMatrix();
+
+    bool bIsOrtho = GetEngine().GetLevelEditor()->GetActiveViewportClient()->IsOrtho();
+
+
+    if (bIsOrtho)
+    {
+        // 오쏘 모드: ScreenToViewSpace()에서 계산된 pickPosition이 클립/뷰 좌표라고 가정
+        FMatrix inverseView = FMatrix::Inverse(viewMatrix);
+        // pickPosition을 월드 좌표로 변환
+        FVector worldPickPos = inverseView.TransformPosition(pickPosition);
+        // 오쏘에서는 픽킹 원점은 unproject된 픽셀의 위치
+        FVector rayOrigin = worldPickPos;
+        // 레이 방향은 카메라의 정면 방향 (평행)
+        FVector orthoRayDir = GEngineLoop.GetLevelEditor()->GetActiveViewportClient()->ViewTransformOrthographic.GetForwardVector().Normalize();
+
+        // 객체의 로컬 좌표계로 변환
+        FMatrix localMatrix = FMatrix::Inverse(worldMatrix);
+        FVector localRayOrigin = localMatrix.TransformPosition(rayOrigin);
+        FVector localRayDir = (localMatrix.TransformPosition(rayOrigin + orthoRayDir) - localRayOrigin).Normalize();
+
+        intersectCount = staticMeshComp->CheckRayIntersection(localRayOrigin, localRayDir, hitDistance);
+        return intersectCount;
+    }
+    else
+    {
+        FMatrix inverseMatrix = FMatrix::Inverse(worldMatrix * viewMatrix);
+        FVector cameraOrigin = { 0,0,0 };
+        FVector pickRayOrigin = inverseMatrix.TransformPosition(cameraOrigin);
+        // 퍼스펙티브 모드의 기존 로직 사용
+        FVector transformedPick = inverseMatrix.TransformPosition(pickPosition);
+        FVector rayDirection = (transformedPick - pickRayOrigin).Normalize();
+
+        intersectCount = staticMeshComp->CheckRayIntersection(pickRayOrigin, rayDirection, hitDistance);
         return intersectCount;
     }
 }

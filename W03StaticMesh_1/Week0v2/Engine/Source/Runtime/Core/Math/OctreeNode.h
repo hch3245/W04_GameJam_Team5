@@ -17,7 +17,7 @@ public:
 
     Octree* octree;
 
-    static const int MAX_OBJECTS = 1;
+    static const int MAX_OBJECTS = 5;
     static const int MAX_DEPTH = 10;
 
     OctreeNode(const FBoundingBox& inBounds, int inDepth = 0, Octree* inOctree = nullptr);

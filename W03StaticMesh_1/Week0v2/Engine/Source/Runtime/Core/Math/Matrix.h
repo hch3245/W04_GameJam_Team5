@@ -51,22 +51,34 @@ struct FMatrix
 	static FVector4 TransformVector(const FVector4& v, const FMatrix& m);
 	static FMatrix CreateTranslationMatrix(const FVector& position);
 
-	FVector TransformPosition(const FVector& vector) const {
-
+    FVector TransformPosition(const FVector& vector) const {
+        // Set up the vector with w = 1.0f in a register.
         __m128 vec = _mm_setr_ps(vector.x, vector.y, vector.z, 1.0f);
 
-        __m128 x = _mm_mul_ps(_mm_shuffle_ps(vec, vec, _MM_SHUFFLE(0, 0, 0, 0)), r[0]);
-        __m128 y = _mm_mul_ps(_mm_shuffle_ps(vec, vec, _MM_SHUFFLE(1, 1, 1, 1)), r[1]);
-        __m128 z = _mm_mul_ps(_mm_shuffle_ps(vec, vec, _MM_SHUFFLE(2, 2, 2, 2)), r[2]);
-        __m128 w = _mm_mul_ps(_mm_shuffle_ps(vec, vec, _MM_SHUFFLE(3, 3, 3, 3)), r[3]);
+        // Since r is stored in column-major order, treat r[0]..r[3] as columns.
+        __m128 col0 = r[0]; // Contains: m00, m10, m20, m30
+        __m128 col1 = r[1]; // Contains: m01, m11, m21, m31
+        __m128 col2 = r[2]; // Contains: m02, m12, m22, m32
+        __m128 col3 = r[3]; // Contains: m03, m13, m23, m33
 
-        __m128 result = _mm_add_ps(_mm_add_ps(x, y), _mm_add_ps(z, w));
+        // Multiply each column by the corresponding component of the vector.
+        __m128 mul0 = _mm_mul_ps(_mm_shuffle_ps(vec, vec, _MM_SHUFFLE(0, 0, 0, 0)), col0);
+        __m128 mul1 = _mm_mul_ps(_mm_shuffle_ps(vec, vec, _MM_SHUFFLE(1, 1, 1, 1)), col1);
+        __m128 mul2 = _mm_mul_ps(_mm_shuffle_ps(vec, vec, _MM_SHUFFLE(2, 2, 2, 2)), col2);
+        __m128 mul3 = _mm_mul_ps(_mm_shuffle_ps(vec, vec, _MM_SHUFFLE(3, 3, 3, 3)), col3);
 
+        // Sum the results: result = vector.x * col0 + vector.y * col1 + vector.z * col2 + 1.0f * col3
+        __m128 result = _mm_add_ps(_mm_add_ps(mul0, mul1), _mm_add_ps(mul2, mul3));
+
+        // Store the result to a temporary array.
         alignas(16) float arr[4];
         _mm_store_ps(arr, result);
 
-        return (arr[3] != 0.0f) ?
-            FVector(arr[0] / arr[3], arr[1] / arr[3], arr[2] / arr[3]) :
-            FVector(arr[0], arr[1], arr[2]);
+        // Use an epsilon threshold to check for a near-zero w value.
+        constexpr float epsilon = 1e-6f;
+        if (fabsf(arr[3]) > epsilon)
+            return FVector(arr[0] / arr[3], arr[1] / arr[3], arr[2] / arr[3]);
+        else
+            return FVector(arr[0], arr[1], arr[2]);
     }
 };
