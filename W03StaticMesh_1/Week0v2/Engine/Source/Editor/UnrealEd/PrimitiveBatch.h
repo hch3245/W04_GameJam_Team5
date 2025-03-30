@@ -28,7 +28,16 @@ public:
     void RenderOBB(const FBoundingBox& localAABB, const FVector& center, const FMatrix& modelMatrix);
 	
     void AddCone(const FVector& center, float radius, float height, int segments,const FVector4& color, const FMatrix& modelMatri);
-    void AddAABB(const FBoundingBox& localAABB);
+    void AddAABB(const FBoundingBox& worldAABB);
+    void AddOctreeAABB(const FBoundingBox& worldAABB, int inDepth);
+
+    bool GetShowConsistentBoundBoxes() { return bShowConsistentBoundBoxes; }
+    void SetShowConsistentBoundBoxes(bool showConsistentBoundBoxes);
+    bool GetShowOctreeBoundBoxes() { return bShowOctreeBoundBoxes; }
+    void SetShowOctreeBoundBoxes(bool showOctreeBoundBoxes);
+
+    int GetShowDepth() { return showDepth; }
+    void SetShowDepth(int inShowDepth);
 
     // 복사 생성자 및 대입 연산자 삭제
     UPrimitiveBatch(const UPrimitiveBatch&) = delete;
@@ -51,6 +60,10 @@ private:
     FGridParameters GridParam;
 
     TArray<FBoundingBox> ConsistentBoundBoxes;
+    bool bShowConsistentBoundBoxes;
+    TArray<FBoundingBox> OctreeBoundBoxes[8];
+    bool bShowOctreeBoundBoxes;
+    int showDepth = 0;
     int ConeSegmentCount = 0;
 
 };

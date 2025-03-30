@@ -2,10 +2,13 @@
 #include "Vector.h"
 #include "Runtime/CoreUObject/UObject/Object.h"
 #include "Octree.h"
+#include "UnrealEd/PrimitiveBatch.h"
 
 OctreeNode::OctreeNode(const FBoundingBox& inBounds, int inDepth, Octree* inOctree)
     :bounds(inBounds), isLeaf(true), depth(inDepth), octree(inOctree)
 {
+    UPrimitiveBatch::GetInstance().AddOctreeAABB(bounds, depth);
+
     for (int i = 0; i < 8; i++)
     {
         children[i] = nullptr;

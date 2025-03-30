@@ -404,6 +404,23 @@ void ControlEditorPanel::CreateModifyButton(ImVec2 ButtonSize, ImFont* IconFont)
         }
         ImGui::EndPopup();
     }
+
+    ImGui::SameLine();
+    bool bShowConsistentBoundBoxes = UPrimitiveBatch::GetInstance().GetShowConsistentBoundBoxes();
+    ImGui::Checkbox("ShowBoundBoxes", &bShowConsistentBoundBoxes);
+    UPrimitiveBatch::GetInstance().SetShowConsistentBoundBoxes(bShowConsistentBoundBoxes);
+
+    ImGui::SameLine();
+    bool bShowOctreeBoundBoxes = UPrimitiveBatch::GetInstance().GetShowOctreeBoundBoxes();
+    ImGui::Checkbox("ShowOctreeBoxes", &bShowOctreeBoundBoxes);
+    UPrimitiveBatch::GetInstance().SetShowOctreeBoundBoxes(bShowOctreeBoundBoxes);
+
+    ImGui::SameLine();
+    int showDepth = UPrimitiveBatch::GetInstance().GetShowDepth();
+    ImGui::SetNextItemWidth(20);
+    ImGui::DragInt("OctreeDepth", &showDepth);
+    UPrimitiveBatch::GetInstance().SetShowDepth(showDepth);
+
 }
 
 void ControlEditorPanel::CreateFlagButton() const

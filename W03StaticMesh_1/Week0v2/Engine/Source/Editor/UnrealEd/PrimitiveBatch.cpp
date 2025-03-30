@@ -35,9 +35,20 @@ void UPrimitiveBatch::GenerateGrid(float spacing, int gridCount)
 
 void UPrimitiveBatch::RenderBatch(const FMatrix& View, const FMatrix& Projection)
 {
-    for (auto& consistentBoundBox : ConsistentBoundBoxes) {
-        BoundingBoxes.Add(consistentBoundBox);
+    if (bShowConsistentBoundBoxes) 
+    {
+        for (auto& consistentBoundBox : ConsistentBoundBoxes) {
+            BoundingBoxes.Add(consistentBoundBox);
+        }
     }
+
+    if (bShowOctreeBoundBoxes) 
+    {
+        for (auto& consistentBoundBox : OctreeBoundBoxes[showDepth]) {
+            BoundingBoxes.Add(consistentBoundBox);
+        }
+    }
+    
     FEngineLoop::renderer.PrepareLineShader();
 
     InitializeVertexBuffer();
@@ -214,5 +225,25 @@ void UPrimitiveBatch::AddCone(const FVector& center, float radius, float height,
 void UPrimitiveBatch::AddAABB(const FBoundingBox& worldAABB)
 {
     ConsistentBoundBoxes.Add(worldAABB);
+}
+
+void UPrimitiveBatch::AddOctreeAABB(const FBoundingBox& worldAABB, int inDepth)
+{
+    OctreeBoundBoxes[inDepth].Add(worldAABB);
+}
+
+void UPrimitiveBatch::SetShowConsistentBoundBoxes(bool showConsistentBoundBoxes)
+{
+    bShowConsistentBoundBoxes = showConsistentBoundBoxes;
+}
+
+void UPrimitiveBatch::SetShowOctreeBoundBoxes(bool showOctreeBoundBoxes)
+{
+    bShowOctreeBoundBoxes = showOctreeBoundBoxes;
+}
+
+void UPrimitiveBatch::SetShowDepth(int inShowDepth)
+{
+    showDepth = inShowDepth;
 }
 
