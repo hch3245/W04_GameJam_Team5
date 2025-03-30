@@ -110,6 +110,9 @@ void OctreeNode::RayCast(const FVector& rayOrigin, const FVector& rayDirection, 
     if (!bounds.Intersect(rayOrigin, rayDirection, distance))
         return;
 
+    
+    UPrimitiveBatch::GetInstance().AddOctreeRayDetectAABB(bounds, depth);
+
     // 현재 노드에 저장된 객체들에 대해 교차 판정
     for (auto obj : objects)
     {

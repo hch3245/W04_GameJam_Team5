@@ -421,6 +421,22 @@ void ControlEditorPanel::CreateModifyButton(ImVec2 ButtonSize, ImFont* IconFont)
     ImGui::DragInt("OctreeDepth", &showDepth);
     UPrimitiveBatch::GetInstance().SetShowDepth(showDepth);
 
+
+    bool bShowOctreeObjBoxes = UPrimitiveBatch::GetInstance().GetShowOctreeObjBoundBoxes();
+    ImGui::Checkbox("ShowOctreeOBJ", &bShowOctreeObjBoxes);
+    UPrimitiveBatch::GetInstance().SetShowOctreeObjBoundBoxes(bShowOctreeObjBoxes);
+
+    ImGui::SameLine();
+    bool bShowRayDetectBoxes = UPrimitiveBatch::GetInstance().GetShowRayDetectBoundBoxes();
+    ImGui::Checkbox("ShowRayDetect", &bShowRayDetectBoxes);
+    UPrimitiveBatch::GetInstance().SetShowRayDetectBoundBoxes(bShowRayDetectBoxes);
+
+    ImGui::SameLine();
+    int showRayDetectDepth = UPrimitiveBatch::GetInstance().GetShowRayDetectDepth();
+    ImGui::SetNextItemWidth(20);
+    ImGui::DragInt("RayDetectDepth", &showRayDetectDepth);
+    UPrimitiveBatch::GetInstance().SetShowRayDetectDepth(showRayDetectDepth);
+
 }
 
 void ControlEditorPanel::CreateFlagButton() const
