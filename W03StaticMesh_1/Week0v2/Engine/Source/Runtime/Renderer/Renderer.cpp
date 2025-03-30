@@ -94,12 +94,10 @@ void FRenderer::ReleaseShader()
 
 void FRenderer::PrepareShader() 
 {
-
       Graphics->DeviceContext->VSSetShader(VertexShader, nullptr, 0);
       Graphics->DeviceContext->PSSetShader(PixelShader, nullptr, 0);
       Graphics->DeviceContext->IASetInputLayout(InputLayout);
     
-
       Graphics->DeviceContext->VSSetConstantBuffers(0, 1, &ConstantBuffer);
       Graphics->DeviceContext->PSSetConstantBuffers(0, 1, &ConstantBuffer);
       Graphics->DeviceContext->PSSetConstantBuffers(1, 1, &MaterialConstantBuffer);
@@ -107,8 +105,6 @@ void FRenderer::PrepareShader()
       Graphics->DeviceContext->PSSetConstantBuffers(3, 1, &FlagBuffer);
       Graphics->DeviceContext->PSSetConstantBuffers(4, 1, &SubMeshConstantBuffer);
       Graphics->DeviceContext->PSSetConstantBuffers(5, 1, &TextureConstantBufer);
-   
-
 }
 
 void FRenderer::ResetVertexShader() const
@@ -125,7 +121,6 @@ void FRenderer::ResetPixelShader() const
 
 void FRenderer::SetVertexShader(const FWString& filename, const FString& funcname, const FString& version)
 {
-    // ���� �߻��� ���ɼ��� ����
     if (Graphics == nullptr)
         assert(0);
     if (VertexShader != nullptr)
@@ -141,7 +136,6 @@ void FRenderer::SetVertexShader(const FWString& filename, const FString& funcnam
 
 void FRenderer::SetPixelShader(const FWString& filename, const FString& funcname, const FString& version)
 {
-    // ���� �߻��� ���ɼ��� ����
     if (Graphics == nullptr)
         assert(0);
     if (VertexShader != nullptr)
@@ -190,7 +184,6 @@ ID3D11Buffer* PreviousIndexBuffer;
 void FRenderer::RenderPrimitive(OBJ::FStaticMeshRenderData* renderData, TArray<FStaticMaterial*> materials, TArray<UMaterial*> overrideMaterial, int selectedSubMeshIndex = -1) 
 {
     UINT offset = 0;
-
 
     if (PreviousVertexBuffer != renderData->VertexBuffer) {
         Graphics->DeviceContext->IASetVertexBuffers(0, 1, &renderData->VertexBuffer, &Stride, &offset);
@@ -1086,8 +1079,6 @@ void FRenderer::SortMeshesByMaterial()
     }
 }
 
-
-
 void FRenderer::RenderStaticMeshes(UWorld* World, std::shared_ptr<FEditorViewportClient> ActiveViewport)
 {
     PrepareShader();
@@ -1160,11 +1151,7 @@ void FRenderer::RenderStaticMeshes(UWorld* World, std::shared_ptr<FEditorViewpor
                 bool bVertexInside = true;  // 각 정점이 프러스텀 내에 있는지 여부
 
                 // 변환된 정점 계산
-<<<<<<< HEAD
                 FVector TransformedVertex = Model.TransformPosition(Vertex);
-=======
-                FVector TransformedVertex = Model.TransformPosition(FVector(Vertex.x, Vertex.y, Vertex.z));
->>>>>>> 2af273b (World에서 비교 뭔가 잘리긴함)
 
                 // 각 평면에 대해 정점이 내부에 있는지 확인
                 for (int i = 0; i < 6; i++)
