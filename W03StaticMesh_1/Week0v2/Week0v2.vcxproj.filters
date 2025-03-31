@@ -423,6 +423,9 @@
     <ClCompile Include="Engine\Source\Runtime\Engine\Classes\GameFramework\Actor.cpp" />
     <ClInclude Include="Engine\Source\Runtime\WindowsPlatformTime.h" />
     <ClInclude Include="Engine\Source\Editor\PropertyEditor\StatPanel.h" />
+    <ClInclude Include="Engine\Source\Runtime\Core\Math\Octree.h" />
+    <ClInclude Include="Engine\Source\Runtime\Core\Math\OctreeNode.h" />
+    <ClInclude Include="Engine\Source\Runtime\Core\Math\Frustrum.h" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Engine\Source\ThirdParty\DirectXTK\Include\DDSTextureLoader.h" />
@@ -514,5 +517,8 @@
   <ItemGroup>
     <ClCompile Include="Engine\Source\Editor\PropertyEditor\StatPanel.cpp" />
     <ClCompile Include="Engine\Source\Runtime\WindowsPlatformTime.cpp" />
+    <ClCompile Include="Engine\Source\Runtime\Core\Math\Octree.cpp" />
+    <ClCompile Include="Engine\Source\Runtime\Core\Math\OctreeNode.cpp" />
+    <ClCompile Include="Engine\Source\Runtime\Core\Math\Frustrum.cpp" />
   </ItemGroup>
 </Project>

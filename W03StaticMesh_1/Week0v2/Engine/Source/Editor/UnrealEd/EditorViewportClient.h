@@ -156,11 +156,6 @@ public: //Camera Movement
     void CameraRotatePitch(float _Value);
     void PivotMoveRight(float _Value);
     void PivotMoveUp(float _Value);
-
-    Plane FrustrumPlanes[6];
-    void ExtractFrustumPlanes();
-
-    Plane ExtractPlane(const FMatrix& matrix, int row1, int row2);
    
     FMatrix& GetViewMatrix() { return  View; }
     FMatrix& GetProjectionMatrix() { return Projection; }
