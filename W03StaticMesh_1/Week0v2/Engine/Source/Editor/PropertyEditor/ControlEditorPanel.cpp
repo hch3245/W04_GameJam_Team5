@@ -18,6 +18,8 @@
 #include "UnrealEd/SceneMgr.h"
 #include "World.h"
 
+#include "UnrealEd/PrimitiveBatch.h"
+
 void ControlEditorPanel::Render()
 {
     /* Pre Setup */
@@ -366,12 +368,75 @@ void ControlEditorPanel::CreateModifyButton(ImVec2 ButtonSize, ImFont* IconFont)
                         UStaticMeshComponent* MeshComp = StaticMeshActor->GetStaticMeshComponent();
                        
                         MeshComp->SetStaticMesh(FManagerOBJ::GetStaticMesh(L"apple_mid.obj"));
+           
+                        FSceneMgr::StaticMeshes.Add(StaticMeshActor);
+                        
+                        // 위치랑 Scale, Transform 고려하여 World 좌표계로 변경 MeshComp->AABB
+                        FMatrix scaleMatrix = FMatrix::CreateScale(
+                            MeshComp->GetWorldScale().x,
+                            MeshComp->GetWorldScale().y,
+                            MeshComp->GetWorldScale().z
+                        );
+
+                        FMatrix rotationMatrix = FMatrix::CreateRotation(
+                            MeshComp->GetWorldRotation().x,
+                            MeshComp->GetWorldRotation().y,
+                            MeshComp->GetWorldRotation().z
+                        );
+
+
+                        FMatrix translationMatrix = FMatrix::CreateTranslationMatrix(MeshComp->GetWorldLocation() * 1.0f);
+
+                        FMatrix worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
+
+                        FVector boundMin = FMatrix::TransformVector(MeshComp->AABB.min, worldMatrix);
+                        FVector boundMax = FMatrix::TransformVector(MeshComp->AABB.max, worldMatrix);
+
+                        FBoundingBox boundBOX = FBoundingBox(boundMin, boundMax);
+                        StaticMeshActor->SetBoundingBox(boundBOX);
+                        World->AddOctreeObject(StaticMeshActor);
+                        UPrimitiveBatch::GetInstance().AddAABB(StaticMeshActor->boundingBox);
                     }
                 }
             }
+            World->UpdateOctreeFromOctreeobjects();
+            FSceneMgr::BuildStaticBatches();
         }
         ImGui::EndPopup();
     }
+
+    ImGui::SameLine();
+    bool bShowConsistentBoundBoxes = UPrimitiveBatch::GetInstance().GetShowConsistentBoundBoxes();
+    ImGui::Checkbox("ShowBoundBoxes", &bShowConsistentBoundBoxes);
+    UPrimitiveBatch::GetInstance().SetShowConsistentBoundBoxes(bShowConsistentBoundBoxes);
+
+    ImGui::SameLine();
+    bool bShowOctreeBoundBoxes = UPrimitiveBatch::GetInstance().GetShowOctreeBoundBoxes();
+    ImGui::Checkbox("ShowOctreeBoxes", &bShowOctreeBoundBoxes);
+    UPrimitiveBatch::GetInstance().SetShowOctreeBoundBoxes(bShowOctreeBoundBoxes);
+
+    ImGui::SameLine();
+    int showDepth = UPrimitiveBatch::GetInstance().GetShowDepth();
+    ImGui::SetNextItemWidth(20);
+    ImGui::DragInt("OctreeDepth", &showDepth);
+    UPrimitiveBatch::GetInstance().SetShowDepth(showDepth);
+
+
+    bool bShowOctreeObjBoxes = UPrimitiveBatch::GetInstance().GetShowOctreeObjBoundBoxes();
+    ImGui::Checkbox("ShowOctreeOBJ", &bShowOctreeObjBoxes);
+    UPrimitiveBatch::GetInstance().SetShowOctreeObjBoundBoxes(bShowOctreeObjBoxes);
+
+    ImGui::SameLine();
+    bool bShowRayDetectBoxes = UPrimitiveBatch::GetInstance().GetShowRayDetectBoundBoxes();
+    ImGui::Checkbox("ShowRayDetect", &bShowRayDetectBoxes);
+    UPrimitiveBatch::GetInstance().SetShowRayDetectBoundBoxes(bShowRayDetectBoxes);
+
+    ImGui::SameLine();
+    int showRayDetectDepth = UPrimitiveBatch::GetInstance().GetShowRayDetectDepth();
+    ImGui::SetNextItemWidth(20);
+    ImGui::DragInt("RayDetectDepth", &showRayDetectDepth);
+    UPrimitiveBatch::GetInstance().SetShowRayDetectDepth(showRayDetectDepth);
+
 }
 
 void ControlEditorPanel::CreateFlagButton() const

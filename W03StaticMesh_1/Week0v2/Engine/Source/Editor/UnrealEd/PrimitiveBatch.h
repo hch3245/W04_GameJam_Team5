@@ -28,7 +28,29 @@ public:
     void RenderOBB(const FBoundingBox& localAABB, const FVector& center, const FMatrix& modelMatrix);
 	
     void AddCone(const FVector& center, float radius, float height, int segments,const FVector4& color, const FMatrix& modelMatri);
-	
+    void AddAABB(const FBoundingBox& worldAABB);
+    void AddOctreeAABB(const FBoundingBox& worldAABB, int inDepth);
+    void AddOctreeObjAABB(const FBoundingBox& worldAABB);
+    void ClearOctreeObjAABB();
+    void AddOctreeRayDetectAABB(const FBoundingBox& worldAABB, int inDepth);
+    void ClearOctreeRayDetectAABB();
+
+    bool GetShowConsistentBoundBoxes() { return bShowConsistentBoundBoxes; }
+    void SetShowConsistentBoundBoxes(bool showConsistentBoundBoxes);
+    bool GetShowOctreeBoundBoxes() { return bShowOctreeBoundBoxes; }
+    void SetShowOctreeBoundBoxes(bool showOctreeBoundBoxes);
+
+    bool GetShowOctreeObjBoundBoxes() { return bShowObjBoundBoxes; }
+    void SetShowOctreeObjBoundBoxes(bool showOctreeObjBoundBoxes);
+    bool GetShowRayDetectBoundBoxes() { return bShowRayDetectBoundBoxes; }
+    void SetShowRayDetectBoundBoxes(bool showRayDetectBoundBoxes);
+
+    int GetShowDepth() { return showDepth; }
+    void SetShowDepth(int inShowDepth);
+
+    int GetShowRayDetectDepth() { return showRayDetectDepth; }
+    void SetShowRayDetectDepth(int inShowDetectDepth);
+
     // 복사 생성자 및 대입 연산자 삭제
     UPrimitiveBatch(const UPrimitiveBatch&) = delete;
     UPrimitiveBatch& operator=(const UPrimitiveBatch&) = delete;
@@ -48,6 +70,19 @@ private:
     TArray<FOBB> OrientedBoundingBoxes;
     TArray<FCone> Cones;
     FGridParameters GridParam;
+
+    TArray<FBoundingBox> ConsistentBoundBoxes;
+    bool bShowConsistentBoundBoxes;
+    TArray<FBoundingBox> OctreeBoundBoxes[8];
+    
+    TArray<FBoundingBox> OctreeObjBoundBoxes;
+    TArray<FBoundingBox> OctreeRayDetectBoundBoxes[8];
+
+    bool bShowOctreeBoundBoxes;
+    bool bShowObjBoundBoxes;
+    bool bShowRayDetectBoundBoxes;
+    int showDepth = 0;
+    int showRayDetectDepth = 0;
     int ConeSegmentCount = 0;
 
 };

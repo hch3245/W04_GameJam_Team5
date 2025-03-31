@@ -997,7 +997,7 @@ void FRenderer::Render(UWorld* World, std::shared_ptr<FEditorViewportClient> Act
     Graphics->ChangeRasterizer(ActiveViewport->GetViewMode());
     ChangeViewMode(ActiveViewport->GetViewMode());
     //UpdateLightBuffer();
-    //UPrimitiveBatch::GetInstance().RenderBatch(ActiveViewport->GetViewMatrix(), ActiveViewport->GetProjectionMatrix());
+    UPrimitiveBatch::GetInstance().RenderBatch(ActiveViewport->GetViewMatrix(), ActiveViewport->GetProjectionMatrix());
 
     //if (ActiveViewport->GetShowFlag() & static_cast<uint64>(EEngineShowFlags::SF_Primitives))
     //    RenderStaticMeshes(World, ActiveViewport);

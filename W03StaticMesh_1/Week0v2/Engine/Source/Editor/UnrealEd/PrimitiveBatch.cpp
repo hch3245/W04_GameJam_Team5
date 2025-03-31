@@ -35,6 +35,37 @@ void UPrimitiveBatch::GenerateGrid(float spacing, int gridCount)
 
 void UPrimitiveBatch::RenderBatch(const FMatrix& View, const FMatrix& Projection)
 {
+    if (bShowConsistentBoundBoxes) 
+    {
+        for (auto& consistentBoundBox : ConsistentBoundBoxes) {
+            BoundingBoxes.Add(consistentBoundBox);
+        }
+    }
+
+    if (bShowOctreeBoundBoxes) 
+    {
+        for (auto& octreeBoundBox : OctreeBoundBoxes[showDepth]) {
+            BoundingBoxes.Add(octreeBoundBox);
+        }
+    }
+
+    if (bShowObjBoundBoxes) 
+    {
+        for (auto& octreeObjBoundBox : OctreeObjBoundBoxes) {
+            BoundingBoxes.Add(octreeObjBoundBox);
+        }
+    }
+    
+    if (bShowRayDetectBoundBoxes) 
+    {
+        for (auto& octreeRayDetectBoundBox : OctreeRayDetectBoundBoxes[showRayDetectDepth]) {
+            BoundingBoxes.Add(octreeRayDetectBoundBox);
+        }
+    }
+    
+
+
+    
     FEngineLoop::renderer.PrepareLineShader();
 
     InitializeVertexBuffer();
@@ -53,6 +84,7 @@ void UPrimitiveBatch::RenderBatch(const FMatrix& View, const FMatrix& Projection
     int obbSize = static_cast<int>(OrientedBoundingBoxes.Num());
     FEngineLoop::renderer.UpdateLinePrimitveCountBuffer(boundingBoxSize, coneSize);
     FEngineLoop::renderer.RenderBatch(GridParam, pVertexBuffer, boundingBoxSize, coneSize, ConeSegmentCount, obbSize);
+    
     BoundingBoxes.Empty();
     Cones.Empty();
     OrientedBoundingBoxes.Empty();
@@ -205,5 +237,68 @@ void UPrimitiveBatch::AddCone(const FVector& center, float radius, float height,
     cone.Color = color;
     cone.ConeSegmentCount = ConeSegmentCount;
     Cones.Add(cone);
+}
+
+void UPrimitiveBatch::AddAABB(const FBoundingBox& worldAABB)
+{
+    ConsistentBoundBoxes.Add(worldAABB);
+}
+
+void UPrimitiveBatch::AddOctreeAABB(const FBoundingBox& worldAABB, int inDepth)
+{
+    OctreeBoundBoxes[inDepth].Add(worldAABB);
+}
+
+void UPrimitiveBatch::AddOctreeObjAABB(const FBoundingBox& worldAABB)
+{
+    OctreeObjBoundBoxes.Add(worldAABB);
+}
+
+void UPrimitiveBatch::ClearOctreeObjAABB()
+{
+    OctreeObjBoundBoxes.Empty();
+}
+
+void UPrimitiveBatch::AddOctreeRayDetectAABB(const FBoundingBox& worldAABB, int inDepth)
+{
+    OctreeRayDetectBoundBoxes[inDepth].Add(worldAABB);
+}
+
+void UPrimitiveBatch::ClearOctreeRayDetectAABB()
+{
+    for (auto& octreeRayDetectAABB : OctreeRayDetectBoundBoxes) 
+    {
+        octreeRayDetectAABB.Empty();
+    }
+}
+
+void UPrimitiveBatch::SetShowConsistentBoundBoxes(bool showConsistentBoundBoxes)
+{
+    bShowConsistentBoundBoxes = showConsistentBoundBoxes;
+}
+
+void UPrimitiveBatch::SetShowOctreeBoundBoxes(bool showOctreeBoundBoxes)
+{
+    bShowOctreeBoundBoxes = showOctreeBoundBoxes;
+}
+
+void UPrimitiveBatch::SetShowOctreeObjBoundBoxes(bool showOctreeObjBoundBoxes)
+{
+    bShowObjBoundBoxes = showOctreeObjBoundBoxes;
+}
+
+void UPrimitiveBatch::SetShowRayDetectBoundBoxes(bool showRayDetectBoundBoxes)
+{
+    bShowRayDetectBoundBoxes = showRayDetectBoundBoxes;
+}
+
+void UPrimitiveBatch::SetShowDepth(int inShowDepth)
+{
+    showDepth = inShowDepth;
+}
+
+void UPrimitiveBatch::SetShowRayDetectDepth(int inShowDetectDepth)
+{
+    showRayDetectDepth = inShowDetectDepth;
 }
 

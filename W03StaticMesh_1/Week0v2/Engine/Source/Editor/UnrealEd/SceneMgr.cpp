@@ -18,6 +18,7 @@
 #include "Runtime/Engine/Classes/Engine/FLoaderOBJ.h"
 
 #include "UnrealEd/EditorViewportClient.h"
+#include "UnrealEd/PrimitiveBatch.h"
 #include "LevelEditor/SLevelEditor.h"
 #include "Math/JungleMath.h"
 #include "Math/MathUtility.h"
@@ -278,6 +279,7 @@ void FSceneMgr::SpawnActorFromSceneData(const FString& jsonStr)
                     
                     StaticMeshActor->SetBoundingBox(FBoundingBox(boundMin, boundMax));
                     World->AddOctreeObject(StaticMeshActor);
+                    UPrimitiveBatch::GetInstance().AddAABB(StaticMeshActor->boundingBox);
                 }
             }
 

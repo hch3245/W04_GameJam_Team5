@@ -2,10 +2,13 @@
 #include "Vector.h"
 #include "Runtime/CoreUObject/UObject/Object.h"
 #include "Octree.h"
+#include "UnrealEd/PrimitiveBatch.h"
 
 OctreeNode::OctreeNode(const FBoundingBox& inBounds, int inDepth, Octree* inOctree)
     :bounds(inBounds), isLeaf(true), depth(inDepth), octree(inOctree)
 {
+    UPrimitiveBatch::GetInstance().AddOctreeAABB(bounds, depth);
+
     for (int i = 0; i < 8; i++)
     {
         children[i] = nullptr;
@@ -86,6 +89,7 @@ void OctreeNode::Insert(UObject* obj)
         bool inserted = false;
         for (int i = 0; i < 8; i++)
         {
+            // Contains 함수 바꾸어야 함
             if (children[i]->Contains(obj->boundingBox))
             {
                 children[i]->Insert(obj);
@@ -106,11 +110,13 @@ void OctreeNode::RayCast(const FVector& rayOrigin, const FVector& rayDirection, 
     if (!bounds.Intersect(rayOrigin, rayDirection, distance))
         return;
 
+    
+    UPrimitiveBatch::GetInstance().AddOctreeRayDetectAABB(bounds, depth);
+
     // 현재 노드에 저장된 객체들에 대해 교차 판정
     for (auto obj : objects)
     {
-        if (obj->boundingBox.Intersect(rayOrigin, rayDirection, distance))
-            results.push_back(obj);
+        results.push_back(obj);
     }
 
     // 자식 노드가 있다면 재귀적으로 검사
