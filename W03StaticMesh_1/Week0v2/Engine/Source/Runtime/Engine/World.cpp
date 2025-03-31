@@ -25,7 +25,12 @@ void UWorld::Initialize()
     //USkySphereComponent* skySphere = SpawnedActor->AddComponent<USkySphereComponent>();
     //skySphere->SetStaticMesh(FManagerOBJ::GetStaticMesh(L"SkySphere.obj"));
     //skySphere->GetStaticMesh()->GetMaterials()[0]->Material->SetDiffuse(FVector((float)32/255, (float)171/255, (float)191/255));
-
+    FManagerOBJ::CreateStaticMesh("Data/apple_mid.obj");
+    FManagerOBJ::CreateStaticMesh("Data/Apple_1.obj");
+    FManagerOBJ::CreateStaticMesh("Data/Apple_2.obj");
+    FManagerOBJ::CreateStaticMesh("Data/bitten_apple_mid.obj");
+    FManagerOBJ::CreateStaticMesh("BittenApple_1.obj");
+    FManagerOBJ::CreateStaticMesh("BittenApple_2.obj");
     CreateOctree(); // Octree의 크기를 최대 범위로 만든 뒤에 수정
 }
 

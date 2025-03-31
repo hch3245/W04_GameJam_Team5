@@ -188,13 +188,13 @@ void OctreeNode::GenerateBatches()
     TArray<AStaticMeshActor*> meshArray =  GetObjectsIncludeChildren();
         
     // Original OBJ를 만드는 함수
-    OriginalOBJBatchIndex = FSceneMgr::BuildStaticBatches(meshArray);
+    OriginalOBJBatchIndex = FSceneMgr::BuildStaticBatches(meshArray, 0);
 
     // LOD 1 OBJ를 만드는 함수
-    LOD1OBJBatchIndex = FSceneMgr::BuildStaticBatches(meshArray);
+    LOD1OBJBatchIndex = FSceneMgr::BuildStaticBatches(meshArray, 1);
 
     // LOD 2 OBJ를 만드는 함수
-    LOD2OBJBatchIndex = FSceneMgr::BuildStaticBatches(meshArray);
+    LOD2OBJBatchIndex = FSceneMgr::BuildStaticBatches(meshArray, 2);
 
 }
 
@@ -227,32 +227,27 @@ int OctreeNode::GiveOBJBatchIndex(const FVector& cameraPosition, int MaterialNum
     if (OriginalOBJBatchIndex != -1 && LODLevel == 0) {
         // cameraPositin이 충분히 가깝다면
         // Batch 그리는에 한테 내 OriginalOBJBatchIndex 주면서 Draw하라고 요청
-        if (dist > OriginalLength) {
+        if (dist < OriginalLength) {
             return OriginalOBJBatchIndex;
         }
-        else {
-            return -1;
-        }
+   
+        
     }
     if (LOD1OBJBatchIndex != -1 && LODLevel == 1) {
         // cameraPositin이 충분히 가깝다면
-        if (dist > LOD1Length) {
+        if (dist < LOD1Length) {
             return LOD1OBJBatchIndex;
         }
-        else {
-            return -1;
-        }
+     
     }
 
     if (LOD2OBJBatchIndex != -1 && LODLevel == 2) {
         // cameraPositin이 충분히 가깝다면
-        if (dist > LOD2Length) {
+        if (dist < LOD2Length) {
             return LOD2OBJBatchIndex;
         }
-        else {
-            return -1;
-        }
+    
     }
 
-    return -1;
+    return LOD2OBJBatchIndex;
 }

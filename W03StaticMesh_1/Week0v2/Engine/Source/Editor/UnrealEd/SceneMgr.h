@@ -17,7 +17,7 @@ public:
     static SceneData ParseSceneData(const FString& jsonStr);
     static void SpawnActorFromSceneData(const FString& jsonStr);
     static void BuildStaticBatches();
-    static int BuildStaticBatches(TArray<AStaticMeshActor*> StaticMeshes);
+    static int BuildStaticBatches(TArray<AStaticMeshActor*> StaticMeshes, int LOD);
     static TArray<FVertexSimple> BakeTransform(const TArray<FVertexSimple>& sourceVertices, const FMatrix& transform);
     static std::string GetFileNameFromPath(const FString& Path);
     static FString LoadSceneFromFile(const FString& filename);

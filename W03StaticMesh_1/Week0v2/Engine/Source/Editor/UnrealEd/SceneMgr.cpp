@@ -430,7 +430,7 @@ void FSceneMgr::SpawnActorFromSceneData(const FString& jsonStr)
 //    }
 //}
 
-int FSceneMgr::BuildStaticBatches(TArray<AStaticMeshActor*> InStaticMeshes)
+int FSceneMgr::BuildStaticBatches(TArray<AStaticMeshActor*> InStaticMeshes, int LOD)
 {
     // [1] 메시를 머티리얼별로 그룹화 (서브메시 없음)
     TMap<UMaterial*, TArray<UStaticMeshComponent*>> MaterialGroups;
@@ -439,6 +439,16 @@ int FSceneMgr::BuildStaticBatches(TArray<AStaticMeshActor*> InStaticMeshes)
         UStaticMeshComponent* MeshComp = Actor->GetStaticMeshComponent();
         if (!MeshComp || !MeshComp->GetStaticMesh())
             continue;
+
+        switch (LOD)
+        {
+        case 1:
+            MeshComp->SetStaticMesh(FManagerOBJ::GetStaticMesh(L"Apple_1.obj"));
+            break;
+        case 2:
+            MeshComp->SetStaticMesh(FManagerOBJ::GetStaticMesh(L"Apple_2.obj"));
+            break;
+        }
 
         // 메시의 모든 머티리얼을 그룹에 추가
         TArray<FStaticMaterial*> MeshMaterials = MeshComp->GetStaticMesh()->GetMaterials();
@@ -525,7 +535,7 @@ int FSceneMgr::BuildStaticBatches(TArray<AStaticMeshActor*> InStaticMeshes)
         CachedRenderData.Add(pRenderData);
     }
     // 시작되는 Index 반환, +1하면 초록색(or 빨간색 일단 모르지만 규칙적으로 들어감)
-    return CachedRenderData.Len() - 2;
+    return CachedRenderData.Num() - 2;
 }
 
 TArray<FVertexSimple> FSceneMgr::BakeTransform(const TArray<FVertexSimple>& sourceVertices, const FMatrix& transform)
