@@ -19,6 +19,7 @@
 #include "World.h"
 
 #include "UnrealEd/PrimitiveBatch.h"
+#include "Core/Math/Octree.h"
 
 void ControlEditorPanel::Render()
 {
@@ -436,6 +437,20 @@ void ControlEditorPanel::CreateModifyButton(ImVec2 ButtonSize, ImFont* IconFont)
     ImGui::SetNextItemWidth(20);
     ImGui::DragInt("RayDetectDepth", &showRayDetectDepth);
     UPrimitiveBatch::GetInstance().SetShowRayDetectDepth(showRayDetectDepth);
+
+    ImGui::SameLine();
+    int showObjDepth = UPrimitiveBatch::GetInstance().GetShowObjDepth();
+    ImGui::SetNextItemWidth(20);
+    ImGui::DragInt("ObjDepth", &showObjDepth);
+    UPrimitiveBatch::GetInstance().SetShowObjDepth(showObjDepth);
+
+    UWorld* world = GEngineLoop.GetWorld();
+
+    ImGui::SameLine();
+    if (ImGui::Button("ShowDepthObj")) {
+        UPrimitiveBatch::GetInstance().ClearOctreeDepth();
+        world->GetOctree()->UpdateObjDepthBoundingBox(showObjDepth);
+    }
 
 }
 

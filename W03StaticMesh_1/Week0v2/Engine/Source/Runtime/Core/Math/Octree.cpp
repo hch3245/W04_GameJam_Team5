@@ -24,6 +24,17 @@ void Octree::UpdateOctreeBound(const FVector& boundMin, const FVector& boundMax)
     root->bounds.max = boundMax;
 }
 
+void Octree::GiveOctreePadding(float padding)
+{
+    root->bounds.min.x -= padding;
+    root->bounds.min.y -= padding;
+    root->bounds.min.z -= padding;
+
+    root->bounds.max.x += padding;
+    root->bounds.max.y += padding;
+    root->bounds.max.z += padding;
+}
+
 void Octree::Insert(UObject* obj)
 {
     if (root->Contains(obj->boundingBox))
@@ -48,4 +59,8 @@ std::vector<UObject*> Octree::FrustumCull(const FFrustum& frustum)
     std::vector<UObject*> visibleObjects;
     root->FrustumCull(frustum, visibleObjects);
     return visibleObjects;
+
+void Octree::UpdateObjDepthBoundingBox(int inDepth)
+{
+    root->UpdateObjDepthBoundingBox(inDepth);
 }

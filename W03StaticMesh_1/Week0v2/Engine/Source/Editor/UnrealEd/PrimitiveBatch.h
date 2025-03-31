@@ -34,6 +34,8 @@ public:
     void ClearOctreeObjAABB();
     void AddOctreeRayDetectAABB(const FBoundingBox& worldAABB, int inDepth);
     void ClearOctreeRayDetectAABB();
+    void AddOctreeDepthObj(const FBoundingBox& worldAABB, int inDepth);
+    void ClearOctreeDepth();
 
     bool GetShowConsistentBoundBoxes() { return bShowConsistentBoundBoxes; }
     void SetShowConsistentBoundBoxes(bool showConsistentBoundBoxes);
@@ -50,6 +52,9 @@ public:
 
     int GetShowRayDetectDepth() { return showRayDetectDepth; }
     void SetShowRayDetectDepth(int inShowDetectDepth);
+
+    int GetShowObjDepth() { return showObjDepth; }
+    void SetShowObjDepth(int inShowObjDepth);
 
     // 복사 생성자 및 대입 연산자 삭제
     UPrimitiveBatch(const UPrimitiveBatch&) = delete;
@@ -78,11 +83,15 @@ private:
     TArray<FBoundingBox> OctreeObjBoundBoxes;
     TArray<FBoundingBox> OctreeRayDetectBoundBoxes[8];
 
+    TArray<FBoundingBox> OctreeDepthObjBoundBoxes[8];
+
+
     bool bShowOctreeBoundBoxes;
     bool bShowObjBoundBoxes;
     bool bShowRayDetectBoundBoxes;
     int showDepth = 0;
     int showRayDetectDepth = 0;
+    int showObjDepth = 0;
     int ConeSegmentCount = 0;
 
 };

@@ -29,4 +29,6 @@ public:
     void Insert(UObject* obj);
     void RayCast(const FVector& rayOrigin, const FVector& rayDirection, std::vector<UObject*>& results);
     void FrustumCull(const FFrustum& frustum, std::vector<UObject*>& visibleObjects);
+
+    void UpdateObjDepthBoundingBox(int inDepth);
 };
