@@ -32,6 +32,11 @@ bool OctreeNode::Contains(const FBoundingBox& box)
     return bounds.BoxContain(box.min, box.max);
 }
 
+bool OctreeNode::Intersects(const FBoundingBox& box)
+{
+    return bounds.BoxIntersect(box.min, box.max);
+}
+
 void OctreeNode::Subdivide()
 {
     FVector center = (bounds.min + bounds.max) * 0.5f;
@@ -71,16 +76,16 @@ void OctreeNode::Insert(UObject* obj)
                 bool inserted = false;
                 for (int i = 0; i < 8; i++)
                 {
-                    if (children[i]->Contains((*it)->boundingBox))
+                    if (children[i]->Intersects((*it)->boundingBox))
                     {
                         children[i]->Insert(*it);
-                        it = objects.erase(it);
                         inserted = true;
-                        break;
                     }
                 }
                 if (!inserted)
                     ++it;
+                else
+                    it = objects.erase(it);
             }
         }
     }
@@ -90,11 +95,10 @@ void OctreeNode::Insert(UObject* obj)
         for (int i = 0; i < 8; i++)
         {
             // Contains 함수 바꾸어야 함
-            if (children[i]->Contains(obj->boundingBox))
+            if (children[i]->Intersects(obj->boundingBox))
             {
                 children[i]->Insert(obj);
                 inserted = true;
-                break;
             }
         }
         if (!inserted) {
