@@ -27,4 +27,6 @@ public:
     void Subdivide();
     void Insert(UObject* obj);
     void RayCast(const FVector& rayOrigin, const FVector& rayDirection, std::vector<UObject*>& results);
+
+    void UpdateObjDepthBoundingBox(int inDepth);
 };

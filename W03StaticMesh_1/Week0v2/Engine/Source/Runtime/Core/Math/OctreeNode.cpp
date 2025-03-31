@@ -29,7 +29,7 @@ OctreeNode::~OctreeNode()
 
 bool OctreeNode::Contains(const FBoundingBox& box)
 {
-    return bounds.BoxIntersect(box.min, box.max);
+    return bounds.BoxContain(box.min, box.max);
 }
 
 void OctreeNode::Subdivide()
@@ -126,6 +126,24 @@ void OctreeNode::RayCast(const FVector& rayOrigin, const FVector& rayDirection, 
         {
             if (children[i])
                 children[i]->RayCast(rayOrigin, rayDirection, results);
+        }
+    }
+}
+
+void OctreeNode::UpdateObjDepthBoundingBox(int inDepth)
+{
+    if (inDepth == depth) {
+        for (auto& depthObj : objects) {
+            UPrimitiveBatch::GetInstance().AddOctreeDepthObj(depthObj->boundingBox, depth);
+        }
+        return;
+    }
+
+    if (!isLeaf) {
+        for (int i = 0; i < 8; i++)
+        {
+            if (children[i])
+                children[i]->UpdateObjDepthBoundingBox(inDepth);
         }
     }
 }

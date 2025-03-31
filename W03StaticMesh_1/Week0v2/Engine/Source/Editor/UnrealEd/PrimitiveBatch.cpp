@@ -63,7 +63,9 @@ void UPrimitiveBatch::RenderBatch(const FMatrix& View, const FMatrix& Projection
         }
     }
     
-
+    for (auto& octreeObjDepth : OctreeDepthObjBoundBoxes[showObjDepth]) {
+        BoundingBoxes.Add(octreeObjDepth);
+    }
 
     
     FEngineLoop::renderer.PrepareLineShader();
@@ -272,6 +274,19 @@ void UPrimitiveBatch::ClearOctreeRayDetectAABB()
     }
 }
 
+void UPrimitiveBatch::AddOctreeDepthObj(const FBoundingBox& worldAABB, int inDepth)
+{
+    OctreeDepthObjBoundBoxes[inDepth].Add(worldAABB);
+}
+
+void UPrimitiveBatch::ClearOctreeDepth()
+{
+    for (auto& octreeObjDepth : OctreeDepthObjBoundBoxes) 
+    {
+        octreeObjDepth.Empty();
+    }
+}
+
 void UPrimitiveBatch::SetShowConsistentBoundBoxes(bool showConsistentBoundBoxes)
 {
     bShowConsistentBoundBoxes = showConsistentBoundBoxes;
@@ -300,5 +315,10 @@ void UPrimitiveBatch::SetShowDepth(int inShowDepth)
 void UPrimitiveBatch::SetShowRayDetectDepth(int inShowDetectDepth)
 {
     showRayDetectDepth = inShowDetectDepth;
+}
+
+void UPrimitiveBatch::SetShowObjDepth(int inShowObjDepth)
+{
+    showObjDepth = inShowObjDepth;
 }
 

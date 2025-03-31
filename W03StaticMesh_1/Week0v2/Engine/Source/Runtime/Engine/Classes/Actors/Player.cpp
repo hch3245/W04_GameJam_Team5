@@ -71,7 +71,8 @@ void AEditorPlayer::Input()
 
             const auto& ActiveViewport = GetEngine().GetLevelEditor()->GetActiveViewportClient();
             ScreenToViewSpace(mousePos.x, mousePos.y, ActiveViewport->GetViewMatrix(), ActiveViewport->GetProjectionMatrix(), pickPosition);
-            bool res = PickGizmo(pickPosition);
+            /*bool res = PickGizmo(pickPosition);*/
+            bool res = false;
             if (!res)
             {
                 FMatrix viewMatrix = ActiveViewport->GetViewMatrix();
