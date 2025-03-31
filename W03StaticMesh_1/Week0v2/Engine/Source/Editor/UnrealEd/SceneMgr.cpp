@@ -592,3 +592,148 @@ bool FSceneMgr::SaveSceneToFile(const FString& filename, const SceneData& sceneD
     return true;
 }
 
+void FSceneMgr::BuildDynamicBatches(const std::vector<UObject*>& visibleObjects)
+{
+    StaticBatches.Empty();
+    CachedRenderData.Empty();
+
+    TMap<UMaterial*, TArray<UStaticMeshComponent*>> MaterialGroups;
+
+    // 가시성이 확인된 오브젝트만 처리
+    for (UObject* obj : visibleObjects)
+    {
+        AStaticMeshActor* Actor = Cast<AStaticMeshActor>(obj);
+        if (!Actor)
+            continue;
+
+        UStaticMeshComponent* MeshComp = Actor->GetStaticMeshComponent();
+        if (!MeshComp || !MeshComp->GetStaticMesh())
+            continue;
+
+        TArray<FStaticMaterial*> meshMaterials = MeshComp->GetStaticMesh()->GetMaterials();
+        if (meshMaterials.Num() <= 0)
+            continue;
+
+        UMaterial* Mat = meshMaterials[0]->Material;
+        if (!MaterialGroups.Contains(Mat))
+        {
+            MaterialGroups.Add(Mat, TArray<UStaticMeshComponent*>());
+        }
+        MaterialGroups[Mat].Add(MeshComp);
+    }
+
+    // 공간적 근접성에 따라 배치 생성
+    const int ChunkSize = 50;
+
+    for (auto& Pair : MaterialGroups)
+    {
+        UMaterial* Mat = Pair.Key;
+        TArray<UStaticMeshComponent*>& MeshGroup = Pair.Value;
+
+        // 공간적으로 근접한 오브젝트끼리 그룹화
+        SortByProximity(FVector(0.0f, 0.0f, 0.0f), MeshGroup);
+
+        int GroupCount = MeshGroup.Num();
+        for (int i = 0; i < GroupCount; i += ChunkSize)
+        {
+            FStaticBatchData BatchData;
+            BatchData.Material = Mat;
+            BatchData.CombinedVertices.Empty();
+            BatchData.CombinedIndices.Empty();
+
+            uint32 VertexOffset = 0;
+            int EndIndex = FMath::Min(i + ChunkSize, GroupCount);
+            for (int j = i; j < EndIndex; ++j)
+            {
+                UStaticMeshComponent* MeshComp = MeshGroup[j];
+                if (!MeshComp || !MeshComp->GetStaticMesh())
+                    continue;
+
+                OBJ::FStaticMeshRenderData* RenderData = MeshComp->GetStaticMesh()->GetRenderData();
+                if (RenderData == nullptr)
+                    continue;
+
+                FMatrix Model = JungleMath::CreateModelMatrix(
+                    MeshComp->GetWorldLocation(),
+                    MeshComp->GetWorldRotation(),
+                    MeshComp->GetWorldScale()
+                );
+
+                // 위치와 노말 등 정점 데이터 베이크
+                TArray<FVertexSimple> TransformedVertices = BakeTransform(RenderData->Vertices, Model);
+                for (uint32 i = 0; i < TransformedVertices.Num(); i++)
+                {
+                    BatchData.CombinedVertices.Add(TransformedVertices[i]);
+                }
+
+                for (uint32 idx : RenderData->Indices)
+                {
+                    BatchData.CombinedIndices.Add(idx + VertexOffset);
+                }
+                VertexOffset += TransformedVertices.Num();
+            }
+
+            if (MeshGroup.Num() > 0 && MeshGroup[0]->GetStaticMesh())
+            {
+                BatchData.Materials = MeshGroup[0]->GetStaticMesh()->GetMaterials();
+            }
+
+            FMaterialSubset Subset;
+            Subset.MaterialIndex = 0;
+            Subset.IndexStart = 0;
+            Subset.IndexCount = BatchData.CombinedIndices.Num();
+            BatchData.MaterialSubsets.Add(Subset);
+
+            StaticBatches.Add(BatchData);
+        }
+    }
+
+    CreateGPUBuffers();
+}
+
+// 공간적 근접성에 따라 메시 정렬
+void FSceneMgr::SortByProximity(FVector ReferencePoint, TArray<UStaticMeshComponent*>& MeshGroup)
+{
+    if (MeshGroup.Num() <= 1)
+        return;
+
+    // 거리에 따라 정렬
+    MeshGroup.Sort([ReferencePoint](const UStaticMeshComponent* A, const UStaticMeshComponent* B) {
+        float distA = ReferencePoint.Distance(A->GetLocalLocation());
+        float distB = ReferencePoint.Distance(B->GetLocalLocation());
+        return distA < distB;
+    });
+}
+
+// GPU 버퍼 생성
+void FSceneMgr::CreateGPUBuffers()
+{
+    for (const FStaticBatchData& Batch : StaticBatches)
+    {
+        OBJ::FStaticMeshRenderData* pRenderData = new OBJ::FStaticMeshRenderData();
+
+        pRenderData->Vertices = Batch.CombinedVertices;
+        pRenderData->Indices = Batch.CombinedIndices;
+        pRenderData->MaterialSubsets = Batch.MaterialSubsets;
+
+        uint32 vertCount = pRenderData->Vertices.Num();
+        if (vertCount > 0)
+        {
+            pRenderData->VertexBuffer = GEngineLoop.renderer.CreateVertexBuffer(
+                pRenderData->Vertices,
+                vertCount * sizeof(FVertexSimple)
+            );
+        }
+
+        uint32 indexCount = pRenderData->Indices.Num();
+        if (indexCount > 0)
+        {
+            pRenderData->IndexBuffer = GEngineLoop.renderer.CreateIndexBuffer(
+                pRenderData->Indices,
+                indexCount * sizeof(uint32)
+            );
+        }
+
+        CachedRenderData.Add(pRenderData);
+    }
+}
