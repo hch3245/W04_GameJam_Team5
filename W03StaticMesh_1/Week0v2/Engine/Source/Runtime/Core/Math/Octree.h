@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Runtime/Core/Math/Frustum.h"
 #include <vector>
 
 class OctreeNode;
@@ -20,6 +21,7 @@ public:
 
     void Insert(UObject* obj);
     std::vector<UObject*>RayCast(const FVector& rayOrigin, const FVector& rayDirection);
+    std::vector<UObject*>FrustumCull(const FFrustum& frustum);
 
     int objectCount = 0;
 };

@@ -42,3 +42,10 @@ std::vector<UObject*> Octree::RayCast(const FVector& rayOrigin, const FVector& r
     root->RayCast(rayOrigin, rayDirection, results);
     return results;
 }
+
+std::vector<UObject*> Octree::FrustumCull(const FFrustum& frustum)
+{
+    std::vector<UObject*> visibleObjects;
+    root->FrustumCull(frustum, visibleObjects);
+    return visibleObjects;
+}

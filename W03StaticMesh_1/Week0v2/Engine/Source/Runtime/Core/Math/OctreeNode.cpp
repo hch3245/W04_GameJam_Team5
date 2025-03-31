@@ -129,3 +129,24 @@ void OctreeNode::RayCast(const FVector& rayOrigin, const FVector& rayDirection, 
         }
     }
 }
+
+void OctreeNode::FrustumCull(const FFrustum& frustum, std::vector<UObject*>& visibleObjects)
+{
+    if (!frustum.IntersectsBox(bounds))
+        return;
+
+    for (auto obj : objects)
+    {
+        if (frustum.IntersectsBox(obj->boundingBox))
+            visibleObjects.push_back(obj);
+    }
+
+    if (!isLeaf)
+    {
+        for (int i = 0; i < 8; i++)
+        {
+            if (children[i])
+                children[i]->FrustumCull(frustum, visibleObjects);
+        }
+    }
+}
