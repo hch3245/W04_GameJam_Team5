@@ -92,6 +92,7 @@ void AEditorPlayer::Input()
                 // TODO: 최적화 위해 아래 코드들 제거 필요
                 UPrimitiveBatch::GetInstance().ClearOctreeRayDetectAABB();
 
+                // Ray 생성 후 피킹 측정 시작
                 StatPanel::GetInstance().BeginStat("PickingTime");
 
                 std::vector<UObject*> pickedObjects = world->GetOctree()->RayCast(pickRayOrigin, rayDirection);
@@ -110,16 +111,11 @@ void AEditorPlayer::Input()
 
                 if (isSuceed)
                 {
+                    // 피킹 성공 시 종료
                     StatPanel::GetInstance().EndStat("PickingTime", true);
-                    //PickingTime = FPlatformTime::ToMilliseconds(pickCounter.Finish());
-                    //AccumulatedTime += PickingTime;
-                    //PickAttemps += 1;
-                    // 7) 성능 시간 출력
-                    //UE_LOG(LogLevel::Display, TEXT("Picking Time %.3f ms Num Attempts %d Accumulated Time %.3f ms "), PickingTime, PickAttemps, AccumulatedTime);
                 }
                 else {
                     StatPanel::GetInstance().EndStat("PickingTime", false);
-                    //UE_LOG(LogLevel::Display, TEXT("Picking Fail"));
                 }
             }
         }
@@ -132,7 +128,7 @@ void AEditorPlayer::Input()
     {
         if (bLeftMouseDown)
         {
-            bLeftMouseDown = false; // ���콺 ������ ��ư�� ���� ���� �ʱ�ȭ
+            bLeftMouseDown = false; 
             GetWorld()->SetPickingGizmo(nullptr);
         }
     }
