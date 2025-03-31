@@ -21,7 +21,7 @@
 #include "UObject/UObjectIterator.h"
 #include "Components/SkySphereComponent.h"
 #include "UnrealEd/SceneMgr.h"
-
+#include "Runtime/Core/Math/Frustrum.h"
 
 void FRenderer::Initialize(FGraphicsDevice* graphics)
 {
@@ -1028,10 +1028,10 @@ void FRenderer::RenderStaticMeshesBatch(UWorld* World, std::shared_ptr<FEditorVi
         OBJ::FStaticMeshRenderData* pRenderData = CachedData[i];
 
         // RenderPrimitive()는 OBJ::FStaticMeshRenderData*를 인자로 받으므로 pRenderData를 그대로 전달합니다.
-        //if (DoFrustrumCull(pRenderData, ActiveViewport))
-        //{
+        if (DoFrustrumCull(pRenderData, ActiveViewport))
+        {
             RenderPrimitive(pRenderData, Batch.Materials, TArray<UMaterial*>(), 0);
-        //}
+        }
     }
 }
 
@@ -1064,156 +1064,30 @@ void FRenderer::SortMeshesByMaterial()
     }
 }
 
-void FRenderer::RenderStaticMeshes(UWorld* World, std::shared_ptr<FEditorViewportClient> ActiveViewport)
-{
-    PrepareShader();
-
-    // 메시 정렬 (한 번만)
-    SortMeshesByMaterial();
-
-    ActiveViewport->ExtractFrustumPlanes();
-
-    // 2️⃣ 재질별로 메시들을 렌더링
-    for (auto& MaterialPair : SortedMesh)
-    {
-        for (UStaticMeshComponent* StaticMeshComp : MaterialPair.second)
-        {
-            // 이전 상태에서 Model 행렬 계산을 캐시하여 변경된 경우에만 업데이트
-            static FVector LastLocation = FVector::ZeroVector;
-            static FVector LastRotation = FVector::ZeroVector;
-            static FVector LastScale = FVector(1.0f, 1.0f, 1.0f);
-
-            bool bModelUpdated = false;
-            if (StaticMeshComp->GetWorldLocation() != LastLocation ||
-                StaticMeshComp->GetWorldRotation() != LastRotation ||
-                StaticMeshComp->GetWorldScale() != LastScale)
-            {
-                // 월드 변환이 변경되었으면 행렬을 갱신
-                LastLocation = StaticMeshComp->GetWorldLocation();
-                LastRotation = StaticMeshComp->GetWorldRotation();
-                LastScale = StaticMeshComp->GetWorldScale();
-                bModelUpdated = true;
-            }
-
-            FMatrix Model;
-            if (bModelUpdated)
-            {
-                Model = JungleMath::CreateModelMatrix(
-                    StaticMeshComp->GetWorldLocation(),
-                    StaticMeshComp->GetWorldRotation(),
-                    StaticMeshComp->GetWorldScale()
-                );
-            }
-
-            // 최종 MVP 행렬
-            FMatrix MVP = Model * ActiveViewport->GetViewMatrix() * ActiveViewport->GetProjectionMatrix();
-
-            // 노말 회전시 필요 행렬
-            FMatrix NormalMatrix = FMatrix::Transpose(FMatrix::Inverse(Model));
-
-            // UUID 색상
-            FVector4 UUIDColor = StaticMeshComp->EncodeUUID() / 255.0f;
-
-            // 선택된 객체 여부
-            bool isSelected = (World->GetSelectedActor() == StaticMeshComp->GetOwner());
-
-            // 상수 데이터 업데이트
-            UpdateConstant(MVP, NormalMatrix, UUIDColor, isSelected);
-
-            // 메시 렌더링
-            OBJ::FStaticMeshRenderData* renderData = StaticMeshComp->GetStaticMesh()->GetRenderData();
-
-            bool bInsideFrustum = false;  // 기본적으로 메시가 프러스텀 외부에 있다고 간주
-
-            FVector Vertex(
-                (renderData->BoundingBoxMax.x - renderData->BoundingBoxMin.x) / 2.0f,
-                (renderData->BoundingBoxMax.y - renderData->BoundingBoxMin.y) / 2.0f,
-                (renderData->BoundingBoxMax.z - renderData->BoundingBoxMin.z) / 2.0f
-            );
-
-            // 메시의 각 정점들을 순회
-            {
-                bool bVertexInside = true;  // 각 정점이 프러스텀 내에 있는지 여부
-
-                // 변환된 정점 계산
-                FVector TransformedVertex = Model.TransformPosition(Vertex);
-
-                // 각 평면에 대해 정점이 내부에 있는지 확인
-                for (int i = 0; i < 6; i++)
-                {
-                    // 평면 방정식에 정점 좌표를 대입하여 계산
-                    float result = ActiveViewport->FrustrumPlanes[i].a * TransformedVertex.x
-                        + ActiveViewport->FrustrumPlanes[i].b * TransformedVertex.y
-                        + ActiveViewport->FrustrumPlanes[i].c * TransformedVertex.z
-                        + ActiveViewport->FrustrumPlanes[i].d;
-
-                    // 점이 프러스텀 외부에 있으면 그 정점은 프러스텀 바깥
-                    if (result < 0.0f)
-                    {
-                        bVertexInside = false;  // 정점이 바깥에 있으면 더 이상 검사할 필요 없음
-                        //break;
-                    }
-                }
-
-                // 하나라도 내부에 있는 정점이 있으면 메시를 렌더링
-                if (bVertexInside)
-                {
-                    bInsideFrustum = true;  // 메시가 프러스텀 내에 있음을 의미
-                    //break;  // 하나라도 내부에 있으면 메시를 렌더링 가능
-                }
-            }
-
-            // 메시가 프러스텀 내에 있다면 렌더링
-            if (bInsideFrustum)
-            {
-                RenderPrimitive(renderData, StaticMeshComp->GetStaticMesh()->GetMaterials(),
-                    StaticMeshComp->GetOverrideMaterials(), StaticMeshComp->GetselectedSubMeshIndex());
-            }
-        }
-    }
-}
-
 bool FRenderer::DoFrustrumCull(OBJ::FStaticMeshRenderData* RenderData, std::shared_ptr<FEditorViewportClient> ActiveViewport)
 {
-    ActiveViewport->ExtractFrustumPlanes();
+    FMatrix ViewProjMatrix = ActiveViewport->GetViewMatrix()* ActiveViewport->GetProjectionMatrix();
+    FFrustum Frustrum;
+    Frustrum.ExtractFromViewProjection(ViewProjMatrix);
 
     bool bInsideFrustum = false;  // 기본적으로 메시가 프러스텀 외부에 있다고 간주
 
     FVector Vertex(
-        (RenderData->BoundingBoxMax.x - RenderData->BoundingBoxMin.x) / 2.0f,
-        (RenderData->BoundingBoxMax.y - RenderData->BoundingBoxMin.y) / 2.0f,
-        (RenderData->BoundingBoxMax.z - RenderData->BoundingBoxMin.z) / 2.0f
+        RenderData->Vertices[0].x,
+        RenderData->Vertices[0].y,
+        RenderData->Vertices[0].z
     );
 
-    // 메시의 각 정점들을 순회
     {
         bool bVertexInside = true;  // 각 정점이 프러스텀 내에 있는지 여부
 
         // 변환된 정점 계산
         FVector TransformedVertex = FMatrix::Identity.TransformPosition(Vertex);
 
-        // 각 평면에 대해 정점이 내부에 있는지 확인
-        for (int i = 0; i < 6; i++)
-        {
-            // 평면 방정식에 정점 좌표를 대입하여 계산
-            float result = ActiveViewport->FrustrumPlanes[i].a * TransformedVertex.x
-                + ActiveViewport->FrustrumPlanes[i].b * TransformedVertex.y
-                + ActiveViewport->FrustrumPlanes[i].c * TransformedVertex.z
-                + ActiveViewport->FrustrumPlanes[i].d;
-
-            // 점이 프러스텀 외부에 있으면 그 정점은 프러스텀 바깥
-            if (result < 0.0f)
-            {
-                bVertexInside = false;  // 정점이 바깥에 있으면 더 이상 검사할 필요 없음
-                //break;
-            }
-        }
-
         // 하나라도 내부에 있는 정점이 있으면 메시를 렌더링
-        if (bVertexInside)
+        if (Frustrum.ContainsPoint(TransformedVertex))
         {
             bInsideFrustum = true;  // 메시가 프러스텀 내에 있음을 의미
-            //break;  // 하나라도 내부에 있으면 메시를 렌더링 가능
         }
     }
 
