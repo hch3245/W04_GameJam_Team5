@@ -327,131 +327,103 @@ void FSceneMgr::SpawnActorFromSceneData(const FString& jsonStr)
 
 void FSceneMgr::BuildStaticBatches()
 {
-    StaticBatches.Empty();
-    CachedRenderData.Empty();
+    CachedRenderData.Empty(); // 기존 데이터 클리어
+
+    // [1] 메시를 머티리얼별로 그룹화 (서브메시 없음)
     TMap<UMaterial*, TArray<UStaticMeshComponent*>> MaterialGroups;
     for (AStaticMeshActor* Actor : StaticMeshes)
     {
-        if (!Actor)
-            continue;
-
         UStaticMeshComponent* MeshComp = Actor->GetStaticMeshComponent();
         if (!MeshComp || !MeshComp->GetStaticMesh())
             continue;
 
-        TArray<FStaticMaterial*> meshMaterials = MeshComp->GetStaticMesh()->GetMaterials();
-        if (meshMaterials.Num() <= 0)
-            continue;
-
-        UMaterial* Mat = meshMaterials[0]->Material;
-        if (!MaterialGroups.Contains(Mat))
+        // 메시의 모든 머티리얼을 그룹에 추가
+        TArray<FStaticMaterial*> MeshMaterials = MeshComp->GetStaticMesh()->GetMaterials();
+        for (FStaticMaterial* MatSlot : MeshMaterials)
         {
-            MaterialGroups.Add(Mat, TArray<UStaticMeshComponent*>());
+            UMaterial* Mat = MatSlot->Material;
+            MaterialGroups.FindOrAdd(Mat).Add(MeshComp);
         }
-        MaterialGroups[Mat].Add(MeshComp);
     }
 
     const int ChunkSize = 100;
 
+    // [2] 머티리얼별로 직접 CachedRenderData 생성
     for (auto& Pair : MaterialGroups)
     {
         UMaterial* Mat = Pair.Key;
         TArray<UStaticMeshComponent*>& MeshGroup = Pair.Value;
         int GroupCount = MeshGroup.Num();
 
-        // 그룹을 ChunkSize 단위로 나눕니다.
+        // 청크 단위 처리
         for (int i = 0; i < GroupCount; i += ChunkSize)
         {
-            FStaticBatchData BatchData;
-            BatchData.Material = Mat;
-            BatchData.CombinedVertices.Empty();
-            BatchData.CombinedIndices.Empty();
+            OBJ::FStaticMeshRenderData* pRenderData = new OBJ::FStaticMeshRenderData();
+            pRenderData->Materials.Add(Mat->GetMaterialInfo()); // 머티리얼 정보 저장
 
             uint32 VertexOffset = 0;
             int EndIndex = FMath::Min(i + ChunkSize, GroupCount);
+
+            // 각 청크 내 메시 병합
             for (int j = i; j < EndIndex; ++j)
             {
                 UStaticMeshComponent* MeshComp = MeshGroup[j];
                 if (!MeshComp || !MeshComp->GetStaticMesh())
                     continue;
 
-                OBJ::FStaticMeshRenderData* RenderData = MeshComp->GetStaticMesh()->GetRenderData();
-                if (RenderData == nullptr)
+                OBJ::FStaticMeshRenderData* SourceData = MeshComp->GetStaticMesh()->GetRenderData();
+                if (!SourceData)
                     continue;
 
+                // 월드 변환 적용
                 FMatrix Model = JungleMath::CreateModelMatrix(
                     MeshComp->GetWorldLocation(),
                     MeshComp->GetWorldRotation(),
                     MeshComp->GetWorldScale()
                 );
 
-                // 위치와 노말 등 정점 데이터 베이크
-                TArray<FVertexSimple> TransformedVertices = BakeTransform(RenderData->Vertices, Model);
-                BatchData.CombinedVertices + TransformedVertices;
+                // 정점 변환 및 병합
+                TArray<FVertexSimple> TransformedVertices = BakeTransform(SourceData->Vertices, Model);
+                pRenderData->Vertices + TransformedVertices;
 
-                for (uint32 idx : RenderData->Indices)
+                // 인덱스 오프셋 적용
+                for (uint32 idx : SourceData->Indices)
                 {
-                    BatchData.CombinedIndices.Add(idx + VertexOffset);
+                    pRenderData->Indices.Add(idx + VertexOffset);
                 }
                 VertexOffset += TransformedVertices.Num();
             }
 
-            // 재질 정보 설정: 그룹 내 첫 번째 메쉬의 StaticMesh에서 Materials 배열을 그대로 복사
-            if (MeshGroup.Num() > 0 && MeshGroup[0]->GetStaticMesh())
-            {
-                BatchData.Materials = MeshGroup[0]->GetStaticMesh()->GetMaterials();
-            }
-            else
-            {
-                BatchData.Materials.Empty();
-            }
-
-            // MaterialSubsets 설정: 전체 배치 데이터를 하나의 subset으로 처리
+            // 서브셋 설정 (전체를 하나의 서브셋으로 처리)
             FMaterialSubset Subset;
-            Subset.MaterialIndex = 0;
+            Subset.MaterialIndex = 0; // 단일 머티리얼
             Subset.IndexStart = 0;
-            Subset.IndexCount = BatchData.CombinedIndices.Num();
-            BatchData.MaterialSubsets.Add(Subset);
+            Subset.IndexCount = pRenderData->Indices.Num();
+            pRenderData->MaterialSubsets.Add(Subset);
 
-            // StaticBatches에 저장 (여기서는 GPU 버퍼는 아직 생성하지 않음)
-            StaticBatches.Add(BatchData);
-        }
-    }
-    for (const FStaticBatchData& Batch : StaticBatches)
-    {
-        OBJ::FStaticMeshRenderData* pRenderData = new OBJ::FStaticMeshRenderData();
+            // GPU 버퍼 생성
+            if (pRenderData->Vertices.Num() > 0)
+            {
+                pRenderData->VertexBuffer = GEngineLoop.renderer.CreateVertexBuffer(
+                    pRenderData->Vertices,
+                    pRenderData->Vertices.Num() * sizeof(FVertexSimple)
+                );
+            }
 
-        pRenderData->Vertices = Batch.CombinedVertices;
-        pRenderData->Indices = Batch.CombinedIndices;
+            if (pRenderData->Indices.Num() > 0)
+            {
+                pRenderData->IndexBuffer = GEngineLoop.renderer.CreateIndexBuffer(
+                    pRenderData->Indices,
+                    pRenderData->Indices.Num() * sizeof(uint32)
+                );
+            }
 
-        pRenderData->MaterialSubsets = Batch.MaterialSubsets;
-        uint32 vertCount = pRenderData->Vertices.Num();
-        if (vertCount > 0)
-        {
-            pRenderData->VertexBuffer = GEngineLoop.renderer.CreateVertexBuffer(
-                pRenderData->Vertices,
-                vertCount * sizeof(FVertexSimple)  // 전체 바이트 크기
-            );
-        }
-        else
-        {
-            pRenderData->VertexBuffer = nullptr;
-        }
+            //// 바운딩 박스 계산 (옵션)
+            //pRenderData->BoundingBoxMin = CalculateBoundingBoxMin(pRenderData->Vertices);
+            //pRenderData->BoundingBoxMax = CalculateBoundingBoxMax(pRenderData->Vertices);
 
-        // GPU 버퍼 생성: IndexBuffer
-        uint32 indexCount = pRenderData->Indices.Num();
-        if (indexCount > 0)
-        {
-            pRenderData->IndexBuffer = GEngineLoop.renderer.CreateIndexBuffer(
-                pRenderData->Indices,
-                indexCount * sizeof(uint32)        // 전체 바이트 크기
-            );
+            CachedRenderData.Add(pRenderData); // 직접 추가
         }
-        else
-        {
-            pRenderData->IndexBuffer = nullptr;
-        }
-        CachedRenderData.Add(pRenderData);
     }
 }
 

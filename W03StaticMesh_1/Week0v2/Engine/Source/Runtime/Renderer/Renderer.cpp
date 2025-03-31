@@ -181,25 +181,57 @@ void FRenderer::RenderPrimitive(OBJ::FStaticMeshRenderData* renderData, TArray<F
 {
     UINT offset = 0;
     Graphics->DeviceContext->IASetVertexBuffers(0, 1, &renderData->VertexBuffer, &Stride, &offset);
-    Graphics->DeviceContext->IASetIndexBuffer(renderData->IndexBuffer, DXGI_FORMAT_R32_UINT, 0);
+
+    if (renderData->IndexBuffer)
+        Graphics->DeviceContext->IASetIndexBuffer(renderData->IndexBuffer, DXGI_FORMAT_R32_UINT, 0);
+
+    if (renderData->MaterialSubsets.Num() == 0)
+    {
+        // no submesh
+        Graphics->DeviceContext->DrawIndexed(renderData->Indices.Num(), 0, 0);
+    }
+
     for (int subMeshIndex = 0; subMeshIndex < renderData->MaterialSubsets.Num(); subMeshIndex++)
     {
         int materialIndex = renderData->MaterialSubsets[subMeshIndex].MaterialIndex;
-        UMaterial* CurrentMaterial;
-        if (materialIndex < overrideMaterial.Num() && overrideMaterial[materialIndex] != nullptr)
-            CurrentMaterial = overrideMaterial[materialIndex];
-        else
-            CurrentMaterial = materials[materialIndex]->Material;
 
-        if (LastMaterial != CurrentMaterial)
+        subMeshIndex == selectedSubMeshIndex ? UpdateSubMeshConstant(true) : UpdateSubMeshConstant(false);
+
+        overrideMaterial[materialIndex] != nullptr ?
+            UpdateMaterial(overrideMaterial[materialIndex]->GetMaterialInfo()) : UpdateMaterial(materials[materialIndex]->Material->GetMaterialInfo());
+
+        if (renderData->IndexBuffer)
         {
-            UpdateMaterial(CurrentMaterial->GetMaterialInfo());
-            LastMaterial = CurrentMaterial;
+            // index draw
+            uint64 startIndex = renderData->MaterialSubsets[subMeshIndex].IndexStart;
+            uint64 indexCount = renderData->MaterialSubsets[subMeshIndex].IndexCount;
+            Graphics->DeviceContext->DrawIndexed(indexCount, startIndex, 0);
         }
+    }
+}
 
-        uint64 startIndex = renderData->MaterialSubsets[subMeshIndex].IndexStart;
-        uint64 indexCount = renderData->MaterialSubsets[subMeshIndex].IndexCount;
-        Graphics->DeviceContext->DrawIndexed(indexCount, startIndex, 0);
+void FRenderer::RenderPrimitive(OBJ::FStaticMeshRenderData* renderData)
+{
+    UINT offset = 0;
+    Graphics->DeviceContext->IASetVertexBuffers(0, 1, &renderData->VertexBuffer, &Stride, &offset);
+    if (renderData->IndexBuffer)
+        Graphics->DeviceContext->IASetIndexBuffer(renderData->IndexBuffer, DXGI_FORMAT_R32_UINT, 0);
+    if (renderData->MaterialSubsets.Num() == 0)
+    {
+        Graphics->DeviceContext->DrawIndexed(renderData->Indices.Num(), 0, 0);
+        return;
+    }
+
+    for (int subMeshIndex = 0; subMeshIndex < renderData->MaterialSubsets.Num(); subMeshIndex++)
+    {
+        int materialIndex = renderData->MaterialSubsets[subMeshIndex].MaterialIndex;
+        UpdateMaterial(renderData->Materials[subMeshIndex]);
+        if (renderData->IndexBuffer)
+        {
+            uint64 startIndex = renderData->MaterialSubsets[subMeshIndex].IndexStart;
+            uint64 indexCount = renderData->MaterialSubsets[subMeshIndex].IndexCount;
+            Graphics->DeviceContext->DrawIndexed(indexCount, startIndex, 0);
+        }
     }
 }
 
@@ -1013,7 +1045,6 @@ void FRenderer::Render(UWorld* World, std::shared_ptr<FEditorViewportClient> Act
 void FRenderer::RenderStaticMeshesBatch(UWorld* World, std::shared_ptr<FEditorViewportClient> ActiveViewport)
 {
     PrepareShader();
-    const TArray<FStaticBatchData>& Batches = FSceneMgr::GetStaticBatches();
     const TArray<OBJ::FStaticMeshRenderData*>& CachedData = FSceneMgr::GetCachedRenderData();
 
     // Model은 이미 배치 데이터에 반영되었으므로 Identity 사용
@@ -1022,15 +1053,14 @@ void FRenderer::RenderStaticMeshesBatch(UWorld* World, std::shared_ptr<FEditorVi
     UpdateConstant(MVP, NormalMatrix, FVector4(0, 0, 0, 0), false);
 
     // Batches와 CachedData의 크기가 동일하다고 가정합니다.
-    for (int i = 0; i < Batches.Num(); i++)
+    for (int i = 0; i < CachedData.Num(); i++)
     {
-        const FStaticBatchData& Batch = Batches[i];
         OBJ::FStaticMeshRenderData* pRenderData = CachedData[i];
 
         // RenderPrimitive()는 OBJ::FStaticMeshRenderData*를 인자로 받으므로 pRenderData를 그대로 전달합니다.
         if (DoFrustumCull(pRenderData, ActiveViewport))
         {
-            RenderPrimitive(pRenderData, Batch.Materials, TArray<UMaterial*>(), 0);
+            RenderPrimitive(pRenderData);
         }
     }
 }
