@@ -24,6 +24,17 @@ void Octree::UpdateOctreeBound(const FVector& boundMin, const FVector& boundMax)
     root->bounds.max = boundMax;
 }
 
+void Octree::GiveOctreePadding(float padding)
+{
+    root->bounds.min.x -= padding;
+    root->bounds.min.y -= padding;
+    root->bounds.min.z -= padding;
+
+    root->bounds.max.x += padding;
+    root->bounds.max.y += padding;
+    root->bounds.max.z += padding;
+}
+
 void Octree::Insert(UObject* obj)
 {
     if (root->Contains(obj->boundingBox))
@@ -41,4 +52,9 @@ std::vector<UObject*> Octree::RayCast(const FVector& rayOrigin, const FVector& r
     std::vector<UObject*> results;
     root->RayCast(rayOrigin, rayDirection, results);
     return results;
+}
+
+void Octree::UpdateObjDepthBoundingBox(int inDepth)
+{
+    root->UpdateObjDepthBoundingBox(inDepth);
 }

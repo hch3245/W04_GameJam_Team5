@@ -188,6 +188,7 @@ void UWorld::AddOctreeObject(UObject* OctreeObject)
 
 void UWorld::UpdateOctreeFromOctreeobjects()
 {
+    worldOctree->GiveOctreePadding(0.5f);
     for (auto& octreeObject : OctreeObjects) 
     {
         worldOctree->Insert(octreeObject);

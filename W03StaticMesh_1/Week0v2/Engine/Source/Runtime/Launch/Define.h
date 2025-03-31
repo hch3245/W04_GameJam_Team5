@@ -256,6 +256,14 @@ struct FBoundingBox
             (min.z < anotherMax.z) && (max.z > anotherMin.z));
     }
 
+    bool BoxContain(const FVector& anotherMin, const FVector& anotherMax) 
+    {
+        // another을 포함하는지
+        return ((min.x < anotherMin.x) && (max.x > anotherMax.x) &&
+            (min.y < anotherMin.y) && (max.y > anotherMax.y) &&
+            (min.z < anotherMin.z) && (max.z > anotherMax.z));
+    }
+
 };
 struct FCone
 {

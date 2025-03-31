@@ -17,9 +17,11 @@ public:
     ~Octree();
 
     void UpdateOctreeBound(const FVector& boundMin, const FVector& boundMax);
+    void GiveOctreePadding(float padding);
 
     void Insert(UObject* obj);
     std::vector<UObject*>RayCast(const FVector& rayOrigin, const FVector& rayDirection);
 
     int objectCount = 0;
+    void UpdateObjDepthBoundingBox(int inDepth);
 };
