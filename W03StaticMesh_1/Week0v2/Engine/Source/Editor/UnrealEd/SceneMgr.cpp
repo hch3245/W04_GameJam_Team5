@@ -440,16 +440,6 @@ int FSceneMgr::BuildStaticBatches(TArray<AStaticMeshActor*> InStaticMeshes, int 
         if (!MeshComp || !MeshComp->GetStaticMesh())
             continue;
 
-        switch (LOD)
-        {
-        case 1:
-            MeshComp->SetStaticMesh(FManagerOBJ::GetStaticMesh(L"Apple_1.obj"));
-            break;
-        case 2:
-            MeshComp->SetStaticMesh(FManagerOBJ::GetStaticMesh(L"Apple_2.obj"));
-            break;
-        }
-
         // 메시의 모든 머티리얼을 그룹에 추가
         TArray<FStaticMaterial*> MeshMaterials = MeshComp->GetStaticMesh()->GetMaterials();
         for (FStaticMaterial* MatSlot : MeshMaterials)
@@ -470,11 +460,28 @@ int FSceneMgr::BuildStaticBatches(TArray<AStaticMeshActor*> InStaticMeshes, int 
         pRenderData->Materials.Add(Mat->GetMaterialInfo()); // 머티리얼 정보 저장
 
         uint32 VertexOffset = 0;
+        int materialindex = 0;
         for (int j = 0; j < GroupCount; ++j)
         {
             UStaticMeshComponent* MeshComp = MeshGroup[j];
             if (!MeshComp || !MeshComp->GetStaticMesh())
                 continue;
+
+            switch (LOD)
+            {
+            case 1:
+                if (materialindex == 0)
+                    MeshComp->SetStaticMesh(FManagerOBJ::GetStaticMesh(L"Apple_1.obj"));
+                else
+                    MeshComp->SetStaticMesh(FManagerOBJ::GetStaticMesh(L"BittenApple_1.obj"));
+                break;
+            case 2:
+                if (materialindex == 0)
+                    MeshComp->SetStaticMesh(FManagerOBJ::GetStaticMesh(L"Apple_2.obj"));
+                else
+                    MeshComp->SetStaticMesh(FManagerOBJ::GetStaticMesh(L"BittenApple_2.obj"));
+                break;
+            }
 
             OBJ::FStaticMeshRenderData* SourceData = MeshComp->GetStaticMesh()->GetRenderData();
             if (!SourceData)
@@ -533,6 +540,7 @@ int FSceneMgr::BuildStaticBatches(TArray<AStaticMeshActor*> InStaticMeshes, int 
             pRenderData->IndexBuffer = nullptr;
         }
         CachedRenderData.Add(pRenderData);
+        materialindex++;
     }
     // 시작되는 Index 반환, +1하면 초록색(or 빨간색 일단 모르지만 규칙적으로 들어감)
     return CachedRenderData.Num() - 2;
