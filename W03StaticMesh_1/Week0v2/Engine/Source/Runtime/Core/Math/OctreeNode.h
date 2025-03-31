@@ -1,5 +1,6 @@
 #pragma once
 #include "Runtime/Launch/Define.h"
+#include "Runtime/Core/Math/Frustum.h"
 #include <vector>
 
 class UObject;
@@ -28,6 +29,7 @@ public:
     void Subdivide();
     void Insert(UObject* obj);
     void RayCast(const FVector& rayOrigin, const FVector& rayDirection, std::vector<UObject*>& results);
+    void FrustumCull(const FFrustum& frustum, std::vector<UObject*>& visibleObjects);
 
     void UpdateObjDepthBoundingBox(int inDepth);
 };
