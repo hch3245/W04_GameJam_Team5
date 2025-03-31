@@ -1,5 +1,7 @@
 #include "Define.h"
 
+#include <DirectXMath.h>
+
 // 단위 행렬 정의
 const FMatrix FMatrix::Identity = {
     _mm_setr_ps(1.0f, 0.0f, 0.0f, 0.0f),
@@ -235,6 +237,32 @@ FMatrix FMatrix::Inverse(const FMatrix& Mat) {
     }
 
     return Inv;
+}
+
+
+
+
+FMatrix FMatrix::InverseByXMMatrix(const FMatrix& Mat)
+{
+    DirectX::XMMATRIX xm = DirectX::XMMatrixSet(
+        Mat.M[0][0], Mat.M[0][1], Mat.M[0][2], Mat.M[0][3],
+        Mat.M[1][0], Mat.M[1][1], Mat.M[1][2], Mat.M[1][3],
+        Mat.M[2][0], Mat.M[2][1], Mat.M[2][2], Mat.M[2][3],
+        Mat.M[3][0], Mat.M[3][1], Mat.M[3][2], Mat.M[3][3]
+    );
+
+    DirectX::XMMATRIX directInverse = DirectX::XMMatrixInverse(nullptr, xm);
+
+    DirectX::XMFLOAT4X4 temp;
+    DirectX::XMStoreFloat4x4(&temp, directInverse);
+
+    FMatrix inverseMatrix(
+        _mm_loadu_ps(temp.m[0]),
+        _mm_loadu_ps(temp.m[1]),
+        _mm_loadu_ps(temp.m[2]),
+        _mm_loadu_ps(temp.m[3])
+    );
+    return inverseMatrix;
 }
 
 

@@ -20,7 +20,6 @@
 #include "Engine/Classes/Engine/StaticMeshActor.h"
 
 
-#include <DirectXMath.h>
 #include "UnrealEd/PrimitiveBatch.h"
 
 AEditorPlayer::AEditorPlayer()
@@ -33,7 +32,6 @@ void AEditorPlayer::Tick(float DeltaTime)
     Input();
 }
 
-using namespace DirectX;
 
 void AEditorPlayer::Input()
 {
@@ -78,24 +76,7 @@ void AEditorPlayer::Input()
                 FMatrix viewMatrix = ActiveViewport->GetViewMatrix();
                 
                 
-                DirectX::XMMATRIX xm = XMMatrixSet(
-                    viewMatrix.M[0][0], viewMatrix.M[0][1], viewMatrix.M[0][2], viewMatrix.M[0][3],
-                    viewMatrix.M[1][0], viewMatrix.M[1][1], viewMatrix.M[1][2], viewMatrix.M[1][3],
-                    viewMatrix.M[2][0], viewMatrix.M[2][1], viewMatrix.M[2][2], viewMatrix.M[2][3],
-                    viewMatrix.M[3][0], viewMatrix.M[3][1], viewMatrix.M[3][2], viewMatrix.M[3][3]
-                    );
-
-                XMMATRIX directInverse = DirectX::XMMatrixInverse(nullptr, xm);
-
-                DirectX::XMFLOAT4X4 temp;
-                DirectX::XMStoreFloat4x4(&temp, directInverse);
-
-                FMatrix inverseMatrix(
-                    _mm_loadu_ps(temp.m[0]),
-                    _mm_loadu_ps(temp.m[1]),
-                    _mm_loadu_ps(temp.m[2]),
-                    _mm_loadu_ps(temp.m[3])
-                );
+                FMatrix inverseMatrix = FMatrix::InverseByXMMatrix(viewMatrix);
 
                 FMatrix hgInverseMatrix = FMatrix::Inverse(viewMatrix);
                 FVector cameraOrigin = { 0,0,0 };
@@ -384,10 +365,14 @@ bool AEditorPlayer::PickActorFromActors(const FVector& pickPosition, std::vector
                 }
             }
         }
+        else {
+            UE_LOG(LogLevel::Error, "NO StaticMeshActor!!!!");
+        }
     }
     if (Possible)
     {
         GetWorld()->SetPickedActor(Possible);
+        UPrimitiveBatch::GetInstance().SetSelectedObjBox(Possible->boundingBox);
         return true;
     }
     else
@@ -448,7 +433,7 @@ int AEditorPlayer::RayIntersectsObject(const FVector& pickPosition, USceneCompon
     if (bIsOrtho)
     {
         // 오쏘 모드: ScreenToViewSpace()에서 계산된 pickPosition이 클립/뷰 좌표라고 가정
-        FMatrix inverseView = FMatrix::Inverse(viewMatrix);
+        FMatrix inverseView = FMatrix::InverseByXMMatrix(viewMatrix);
         // pickPosition을 월드 좌표로 변환
         FVector worldPickPos = inverseView.TransformPosition(pickPosition);  
         // 오쏘에서는 픽킹 원점은 unproject된 픽셀의 위치
@@ -457,7 +442,7 @@ int AEditorPlayer::RayIntersectsObject(const FVector& pickPosition, USceneCompon
         FVector orthoRayDir = GEngineLoop.GetLevelEditor()->GetActiveViewportClient()->ViewTransformOrthographic.GetForwardVector().Normalize();
 
         // 객체의 로컬 좌표계로 변환
-        FMatrix localMatrix = FMatrix::Inverse(worldMatrix);
+        FMatrix localMatrix = FMatrix::InverseByXMMatrix(worldMatrix);
         FVector localRayOrigin = localMatrix.TransformPosition(rayOrigin);
         FVector localRayDir = (localMatrix.TransformPosition(rayOrigin + orthoRayDir) - localRayOrigin).Normalize();
         
@@ -466,7 +451,7 @@ int AEditorPlayer::RayIntersectsObject(const FVector& pickPosition, USceneCompon
     }
     else
     {
-        FMatrix inverseMatrix = FMatrix::Inverse(worldMatrix * viewMatrix);
+        FMatrix inverseMatrix = FMatrix::InverseByXMMatrix(worldMatrix * viewMatrix);
         FVector cameraOrigin = { 0,0,0 };
         FVector pickRayOrigin = inverseMatrix.TransformPosition(cameraOrigin);
         // 퍼스펙티브 모드의 기존 로직 사용
@@ -503,7 +488,7 @@ int AEditorPlayer::RayIntersectsObject(const FVector& pickPosition, UStaticMeshC
     if (bIsOrtho)
     {
         // 오쏘 모드: ScreenToViewSpace()에서 계산된 pickPosition이 클립/뷰 좌표라고 가정
-        FMatrix inverseView = FMatrix::Inverse(viewMatrix);
+        FMatrix inverseView = FMatrix::InverseByXMMatrix(viewMatrix);
         // pickPosition을 월드 좌표로 변환
         FVector worldPickPos = inverseView.TransformPosition(pickPosition);
         // 오쏘에서는 픽킹 원점은 unproject된 픽셀의 위치
@@ -512,7 +497,7 @@ int AEditorPlayer::RayIntersectsObject(const FVector& pickPosition, UStaticMeshC
         FVector orthoRayDir = GEngineLoop.GetLevelEditor()->GetActiveViewportClient()->ViewTransformOrthographic.GetForwardVector().Normalize();
 
         // 객체의 로컬 좌표계로 변환
-        FMatrix localMatrix = FMatrix::Inverse(worldMatrix);
+        FMatrix localMatrix = FMatrix::InverseByXMMatrix(worldMatrix);
         FVector localRayOrigin = localMatrix.TransformPosition(rayOrigin);
         FVector localRayDir = (localMatrix.TransformPosition(rayOrigin + orthoRayDir) - localRayOrigin).Normalize();
 
@@ -521,7 +506,7 @@ int AEditorPlayer::RayIntersectsObject(const FVector& pickPosition, UStaticMeshC
     }
     else
     {
-        FMatrix inverseMatrix = FMatrix::Inverse(worldMatrix * viewMatrix);
+        FMatrix inverseMatrix = FMatrix::InverseByXMMatrix(worldMatrix * viewMatrix);
         FVector cameraOrigin = { 0,0,0 };
         FVector pickRayOrigin = inverseMatrix.TransformPosition(cameraOrigin);
         // 퍼스펙티브 모드의 기존 로직 사용

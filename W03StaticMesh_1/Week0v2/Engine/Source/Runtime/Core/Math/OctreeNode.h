@@ -25,6 +25,7 @@ public:
     ~OctreeNode();
 
     bool Contains(const FBoundingBox& box);
+    bool Intersects(const FBoundingBox& box);
     void Subdivide();
     void Insert(UObject* obj);
     void RayCast(const FVector& rayOrigin, const FVector& rayDirection, std::vector<UObject*>& results);

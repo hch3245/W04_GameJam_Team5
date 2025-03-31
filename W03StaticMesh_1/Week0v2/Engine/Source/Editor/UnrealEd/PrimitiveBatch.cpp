@@ -6,6 +6,7 @@ extern FEngineLoop GEngineLoop;
 UPrimitiveBatch::UPrimitiveBatch()
 {
     GenerateGrid(5, 5000);
+    SelectedObjBox = FBoundingBox();;
 }
 
 UPrimitiveBatch::~UPrimitiveBatch()
@@ -35,6 +36,11 @@ void UPrimitiveBatch::GenerateGrid(float spacing, int gridCount)
 
 void UPrimitiveBatch::RenderBatch(const FMatrix& View, const FMatrix& Projection)
 {
+    if (bShowSelectedObjBox) 
+    {
+        BoundingBoxes.Add(SelectedObjBox);
+    }
+
     if (bShowConsistentBoundBoxes) 
     {
         for (auto& consistentBoundBox : ConsistentBoundBoxes) {
@@ -285,6 +291,12 @@ void UPrimitiveBatch::ClearOctreeDepth()
     {
         octreeObjDepth.Empty();
     }
+}
+
+void UPrimitiveBatch::SetSelectedObjBox(const FBoundingBox& worldAABB)
+{
+    bShowSelectedObjBox = true;
+    SelectedObjBox = worldAABB;
 }
 
 void UPrimitiveBatch::SetShowConsistentBoundBoxes(bool showConsistentBoundBoxes)
