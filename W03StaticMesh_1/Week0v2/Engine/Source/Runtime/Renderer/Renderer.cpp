@@ -21,7 +21,7 @@
 #include "UObject/UObjectIterator.h"
 #include "Components/SkySphereComponent.h"
 #include "UnrealEd/SceneMgr.h"
-#include "Runtime/Core/Math/Frustrum.h"
+#include "Runtime/Core/Math/Frustum.h"
 
 void FRenderer::Initialize(FGraphicsDevice* graphics)
 {
@@ -1028,7 +1028,7 @@ void FRenderer::RenderStaticMeshesBatch(UWorld* World, std::shared_ptr<FEditorVi
         OBJ::FStaticMeshRenderData* pRenderData = CachedData[i];
 
         // RenderPrimitive()는 OBJ::FStaticMeshRenderData*를 인자로 받으므로 pRenderData를 그대로 전달합니다.
-        if (DoFrustrumCull(pRenderData, ActiveViewport))
+        if (DoFrustumCull(pRenderData, ActiveViewport))
         {
             RenderPrimitive(pRenderData, Batch.Materials, TArray<UMaterial*>(), 0);
         }
@@ -1064,11 +1064,11 @@ void FRenderer::SortMeshesByMaterial()
     }
 }
 
-bool FRenderer::DoFrustrumCull(OBJ::FStaticMeshRenderData* RenderData, std::shared_ptr<FEditorViewportClient> ActiveViewport)
+bool FRenderer::DoFrustumCull(OBJ::FStaticMeshRenderData* RenderData, std::shared_ptr<FEditorViewportClient> ActiveViewport)
 {
     FMatrix ViewProjMatrix = ActiveViewport->GetViewMatrix()* ActiveViewport->GetProjectionMatrix();
-    FFrustum Frustrum;
-    Frustrum.ExtractFromViewProjection(ViewProjMatrix);
+    FFrustum Frustum;
+    Frustum.ExtractFromViewProjection(ViewProjMatrix);
 
     bool bInsideFrustum = false;  // 기본적으로 메시가 프러스텀 외부에 있다고 간주
 
@@ -1085,7 +1085,7 @@ bool FRenderer::DoFrustrumCull(OBJ::FStaticMeshRenderData* RenderData, std::shar
         FVector TransformedVertex = FMatrix::Identity.TransformPosition(Vertex);
 
         // 하나라도 내부에 있는 정점이 있으면 메시를 렌더링
-        if (Frustrum.ContainsPoint(TransformedVertex))
+        if (Frustum.ContainsPoint(TransformedVertex))
         {
             bInsideFrustum = true;  // 메시가 프러스텀 내에 있음을 의미
         }
