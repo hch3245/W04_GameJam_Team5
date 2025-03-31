@@ -56,9 +56,9 @@ void ControlEditorPanel::Render()
     
     ImGui::SameLine();
     
-    CreateFlagButton();
+    //CreateFlagButton();
     
-    ImGui::SameLine();
+    //ImGui::SameLine();
 
     CreateModifyButton(IconSize, IconFont);
 
@@ -70,9 +70,9 @@ void ControlEditorPanel::Render()
     /* Move Cursor X Position */
     ImGui::SetCursorPosX(ContentWidth - (IconSize.x * 3.0f + 16.0f));
     
-    ImGui::PushFont(IconFont);
+   /* ImGui::PushFont(IconFont);
     CreateSRTButton(IconSize);
-    ImGui::PopFont();
+    ImGui::PopFont();*/
     
     ImGui::End();
 }
@@ -245,96 +245,96 @@ void ControlEditorPanel::CreateModifyButton(ImVec2 ButtonSize, ImFont* IconFont)
 
     ImGui::SameLine();
     
-    ImGui::PushFont(IconFont);
+    /*ImGui::PushFont(IconFont);
     if (ImGui::Button("\ue9c8", ButtonSize))
     {
         ImGui::OpenPopup("PrimitiveControl");
     }
-    ImGui::PopFont();
+    ImGui::PopFont();*/
 
-    if (ImGui::BeginPopup("PrimitiveControl"))
-    {
-        struct Primitive {
-            const char* label;
-            int obj;
-        };
+    //if (ImGui::BeginPopup("PrimitiveControl"))
+    //{
+    //    struct Primitive {
+    //        const char* label;
+    //        int obj;
+    //    };
 
-        static const Primitive primitives[] = {
-            { .label= "Cube",      .obj= OBJ_CUBE },
-            { .label= "Sphere",    .obj= OBJ_SPHERE },
-            { .label= "SpotLight", .obj= OBJ_SpotLight },
-            { .label= "Particle",  .obj= OBJ_PARTICLE },
-            { .label= "Text",      .obj= OBJ_Text }
-        };
+    //    static const Primitive primitives[] = {
+    //        { .label= "Cube",      .obj= OBJ_CUBE },
+    //        { .label= "Sphere",    .obj= OBJ_SPHERE },
+    //        { .label= "SpotLight", .obj= OBJ_SpotLight },
+    //        { .label= "Particle",  .obj= OBJ_PARTICLE },
+    //        { .label= "Text",      .obj= OBJ_Text }
+    //    };
 
-        for (const auto& primitive : primitives)
-        {
-            if (ImGui::Selectable(primitive.label))
-            {
-                // GEngineLoop.GetWorld()->SpawnObject(static_cast<OBJECTS>(primitive.obj));
-                UWorld* World = GEngineLoop.GetWorld();
-                AActor* SpawnedActor = nullptr;
-                switch (static_cast<OBJECTS>(primitive.obj))
-                {
-                case OBJ_SPHERE:
-                {
-                    SpawnedActor = World->SpawnActor<AActor>();
-                    SpawnedActor->SetActorLabel(TEXT("OBJ_SPHERE"));
-                    SpawnedActor->AddComponent<USphereComp>();
-                    break;
-                }
-                case OBJ_CUBE:
-                {
-                    AStaticMeshActor* TempActor = World->SpawnActor<AStaticMeshActor>();
-                    TempActor->SetActorLabel(TEXT("OBJ_CUBE"));
-                    UStaticMeshComponent* MeshComp = TempActor->GetStaticMeshComponent();
-                    FManagerOBJ::CreateStaticMesh("Assets/helloBlender.obj");
-                    MeshComp->SetStaticMesh(FManagerOBJ::GetStaticMesh(L"helloBlender.obj"));
-                    break;
-                }
-                case OBJ_SpotLight:
-                {
-                    SpawnedActor = World->SpawnActor<AActor>();
-                    SpawnedActor->SetActorLabel(TEXT("OBJ_SpotLight"));
-                    SpawnedActor->AddComponent<ULightComponentBase>();
-                    break;
-                }
-                case OBJ_PARTICLE:
-                {
-                    SpawnedActor = World->SpawnActor<AActor>();
-                    SpawnedActor->SetActorLabel(TEXT("OBJ_PARTICLE"));
-                    UParticleSubUVComp* ParticleComponent = SpawnedActor->AddComponent<UParticleSubUVComp>();
-                    ParticleComponent->SetTexture(L"Assets/Texture/T_Explosion_SubUV.png");
-                    ParticleComponent->SetRowColumnCount(6, 6);
-                    ParticleComponent->SetScale(FVector(10.0f, 10.0f, 1.0f));
-                    ParticleComponent->Activate();
-                    break;
-                }
-                case OBJ_Text:
-                {
-                    SpawnedActor = World->SpawnActor<AActor>();
-                    SpawnedActor->SetActorLabel(TEXT("OBJ_Text"));
-                    UText* TextComponent = SpawnedActor->AddComponent<UText>();
-                    TextComponent->SetTexture(L"Assets/Texture/font.png");
-                    TextComponent->SetRowColumnCount(106, 106);
-                    TextComponent->SetText(L"안녕하세요 Jungle 1");
-                    break;
-                }
-                case OBJ_TRIANGLE:
-                case OBJ_CAMERA:
-                case OBJ_PLAYER:
-                case OBJ_END:
-                    break;
-                }
-        
-                if (SpawnedActor)
-                {
-                    World->SetPickedActor(SpawnedActor);
-                }
-            }
-        }
-        ImGui::EndPopup();
-    }
+    //    for (const auto& primitive : primitives)
+    //    {
+    //        if (ImGui::Selectable(primitive.label))
+    //        {
+    //            // GEngineLoop.GetWorld()->SpawnObject(static_cast<OBJECTS>(primitive.obj));
+    //            UWorld* World = GEngineLoop.GetWorld();
+    //            AActor* SpawnedActor = nullptr;
+    //            switch (static_cast<OBJECTS>(primitive.obj))
+    //            {
+    //            case OBJ_SPHERE:
+    //            {
+    //                SpawnedActor = World->SpawnActor<AActor>();
+    //                SpawnedActor->SetActorLabel(TEXT("OBJ_SPHERE"));
+    //                SpawnedActor->AddComponent<USphereComp>();
+    //                break;
+    //            }
+    //            case OBJ_CUBE:
+    //            {
+    //                AStaticMeshActor* TempActor = World->SpawnActor<AStaticMeshActor>();
+    //                TempActor->SetActorLabel(TEXT("OBJ_CUBE"));
+    //                UStaticMeshComponent* MeshComp = TempActor->GetStaticMeshComponent();
+    //                FManagerOBJ::CreateStaticMesh("Assets/helloBlender.obj");
+    //                MeshComp->SetStaticMesh(FManagerOBJ::GetStaticMesh(L"helloBlender.obj"));
+    //                break;
+    //            }
+    //            case OBJ_SpotLight:
+    //            {
+    //                SpawnedActor = World->SpawnActor<AActor>();
+    //                SpawnedActor->SetActorLabel(TEXT("OBJ_SpotLight"));
+    //                SpawnedActor->AddComponent<ULightComponentBase>();
+    //                break;
+    //            }
+    //            case OBJ_PARTICLE:
+    //            {
+    //                SpawnedActor = World->SpawnActor<AActor>();
+    //                SpawnedActor->SetActorLabel(TEXT("OBJ_PARTICLE"));
+    //                UParticleSubUVComp* ParticleComponent = SpawnedActor->AddComponent<UParticleSubUVComp>();
+    //                ParticleComponent->SetTexture(L"Assets/Texture/T_Explosion_SubUV.png");
+    //                ParticleComponent->SetRowColumnCount(6, 6);
+    //                ParticleComponent->SetScale(FVector(10.0f, 10.0f, 1.0f));
+    //                ParticleComponent->Activate();
+    //                break;
+    //            }
+    //            case OBJ_Text:
+    //            {
+    //                SpawnedActor = World->SpawnActor<AActor>();
+    //                SpawnedActor->SetActorLabel(TEXT("OBJ_Text"));
+    //                UText* TextComponent = SpawnedActor->AddComponent<UText>();
+    //                TextComponent->SetTexture(L"Assets/Texture/font.png");
+    //                TextComponent->SetRowColumnCount(106, 106);
+    //                TextComponent->SetText(L"안녕하세요 Jungle 1");
+    //                break;
+    //            }
+    //            case OBJ_TRIANGLE:
+    //            case OBJ_CAMERA:
+    //            case OBJ_PLAYER:
+    //            case OBJ_END:
+    //                break;
+    //            }
+    //    
+    //            if (SpawnedActor)
+    //            {
+    //                World->SetPickedActor(SpawnedActor);
+    //            }
+    //        }
+    //    }
+    //    ImGui::EndPopup();
+    //}
 
     ImGui::SameLine();
 

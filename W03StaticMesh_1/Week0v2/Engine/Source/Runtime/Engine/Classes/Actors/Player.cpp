@@ -22,6 +22,7 @@
 
 #include <DirectXMath.h>
 #include "UnrealEd/PrimitiveBatch.h"
+#include "Editor/PropertyEditor/StatPanel.h"
 
 AEditorPlayer::AEditorPlayer()
 {
@@ -55,9 +56,8 @@ void AEditorPlayer::Input()
             // TArray<UObject*> objectArr = GetWorld()->GetObjectArr();
             
             
-            TStatId StatId;
-            FScopeCycleCounter pickCounter(StatId);  // 성능 추적 시작
-   
+            //TStatId StatId;
+            //FScopeCycleCounter pickCounter(StatId);  // 성능 추적 시작
 
             /*for ( const auto obj : TObjectRange<USceneComponent>())
             {
@@ -108,10 +108,10 @@ void AEditorPlayer::Input()
                 FVector hgtransformedPick = hgInverseMatrix.TransformPosition(pickPosition);
                 FVector hgrayDirection =(hgtransformedPick - hgpickRayOrigin).Normalize();
 
-                
-
                 // TODO: 최적화 위해 아래 코드들 제거 필요
                 UPrimitiveBatch::GetInstance().ClearOctreeRayDetectAABB();
+
+                StatPanel::GetInstance().BeginStat("PickingTime");
 
                 std::vector<UObject*> pickedObjects = world->GetOctree()->RayCast(pickRayOrigin, rayDirection);
 
@@ -121,30 +121,26 @@ void AEditorPlayer::Input()
                 for (auto& pickedObject : pickedObjects) {
                     UPrimitiveBatch::GetInstance().AddOctreeObjAABB(pickedObject->boundingBox);
                 }
-                UE_LOG(LogLevel::Display, TEXT("Detect %d OCtree Objects"), pickedObjects.size());
+                //UE_LOG(LogLevel::Display, TEXT("Detect %d OCtree Objects"), pickedObjects.size());
 
                 bool isSuceed = PickActorFromActors(pickPosition, pickedObjects);
 
                 /*bool isSuceed= PickActor(pickPosition);*/
 
-
                 if (isSuceed)
                 {
-                    PickingTime = FPlatformTime::ToMilliseconds(pickCounter.Finish());
-                    AccumulatedTime += PickingTime;
-                    PickAttemps += 1;
+                    StatPanel::GetInstance().EndStat("PickingTime", true);
+                    //PickingTime = FPlatformTime::ToMilliseconds(pickCounter.Finish());
+                    //AccumulatedTime += PickingTime;
+                    //PickAttemps += 1;
                     // 7) 성능 시간 출력
-                    UE_LOG(LogLevel::Display, TEXT("Picking Time %.3f ms Num Attempts %d Accumulated Time %.3f ms "), PickingTime, PickAttemps, AccumulatedTime);
+                    //UE_LOG(LogLevel::Display, TEXT("Picking Time %.3f ms Num Attempts %d Accumulated Time %.3f ms "), PickingTime, PickAttemps, AccumulatedTime);
                 }
                 else {
-                    UE_LOG(LogLevel::Display, TEXT("Picking Fail"));
+                    StatPanel::GetInstance().EndStat("PickingTime", false);
+                    //UE_LOG(LogLevel::Display, TEXT("Picking Fail"));
                 }
-
             }
-            
-       
-            
-           
         }
         else
         {

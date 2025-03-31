@@ -43,7 +43,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
                 }
             }
         }
-     Console::GetInstance().OnResize(hWnd);
+     //Console::GetInstance().OnResize(hWnd);
     // ControlPanel::GetInstance().OnResize(hWnd);
     // PropertyPanel::GetInstance().OnResize(hWnd);
     // Outliner::GetInstance().OnResize(hWnd);
@@ -179,7 +179,7 @@ void FEngineLoop::Tick()
         UIMgr->BeginFrame();
         UnrealEditor->Render();
 
-        Console::GetInstance().Draw();
+        //Console::GetInstance().Draw();
         StatPanel::GetInstance().Draw();
         UIMgr->EndFrame();
 
