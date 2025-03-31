@@ -1028,10 +1028,10 @@ void FRenderer::RenderStaticMeshesBatch(UWorld* World, std::shared_ptr<FEditorVi
         OBJ::FStaticMeshRenderData* pRenderData = CachedData[i];
 
         // RenderPrimitive()는 OBJ::FStaticMeshRenderData*를 인자로 받으므로 pRenderData를 그대로 전달합니다.
-        if (DoFrustrumCull(pRenderData, ActiveViewport))
-        {
+        //if (DoFrustrumCull(pRenderData, ActiveViewport))
+        //{
             RenderPrimitive(pRenderData, Batch.Materials, TArray<UMaterial*>(), 0);
-        }
+        //}
     }
 }
 
