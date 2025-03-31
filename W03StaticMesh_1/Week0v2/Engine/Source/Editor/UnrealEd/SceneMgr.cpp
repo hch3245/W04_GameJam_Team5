@@ -22,6 +22,8 @@
 #include "LevelEditor/SLevelEditor.h"
 #include "Math/JungleMath.h"
 #include "Math/MathUtility.h"
+
+#include "Core/Math/Octree.h"
 using json = nlohmann::json;
 
 SceneData FSceneMgr::ParseSceneData(const FString& jsonStr)
@@ -315,6 +317,7 @@ void FSceneMgr::SpawnActorFromSceneData(const FString& jsonStr)
 
 
         World->UpdateOctreeFromOctreeobjects();
+        World->GetOctree()->GenerateBatches(5);
 
     }
     catch (const std::exception& e) {

@@ -6,7 +6,7 @@
 class OctreeNode;
 struct FBoundingBox;
 struct FVector;
-class UObject;
+class AStaticMeshActor;
 
 class Octree 
 {
@@ -17,13 +17,24 @@ public:
     Octree();
     ~Octree();
 
+    int maxDepth = 0;
+
     void UpdateOctreeBound(const FVector& boundMin, const FVector& boundMax);
     void GiveOctreePadding(float padding);
 
-    void Insert(UObject* obj);
-    std::vector<UObject*>RayCast(const FVector& rayOrigin, const FVector& rayDirection);
-    std::vector<UObject*>FrustumCull(const FFrustum& frustum);
+    void Insert(AStaticMeshActor* obj);
+    std::vector<AStaticMeshActor*>RayCast(const FVector& rayOrigin, const FVector& rayDirection);
+    std::vector<AStaticMeshActor*>FrustumCull(const FFrustum& frustum);
 
-    int objectCount = 0;
+    TArray<OctreeNode*> OctreeArray[10];
+
+    TArray<OctreeNode*> GetBatchOctreeArray() { return OctreeArray[generatedDepth]; }
+
     void UpdateObjDepthBoundingBox(int inDepth);
+
+    void GenerateBatches(int depth);
+
+    void GenerateBatches();
+
+    int generatedDepth = -1;
 };

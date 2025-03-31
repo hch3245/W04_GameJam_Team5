@@ -3,9 +3,11 @@
 #include "Runtime/CoreUObject/UObject/Object.h"
 #include "Octree.h"
 #include "UnrealEd/PrimitiveBatch.h"
+#include "Classes/Engine/StaticMeshActor.h"
+#include "UnrealEd/SceneMgr.h"
 
 OctreeNode::OctreeNode(const FBoundingBox& inBounds, int inDepth, Octree* inOctree)
-    :bounds(inBounds), isLeaf(true), depth(inDepth), octree(inOctree)
+    :bounds(inBounds), isLeaf(true), depth(inDepth), octree(inOctree), holdObjNum(0)
 {
     UPrimitiveBatch::GetInstance().AddOctreeAABB(bounds, depth);
 
@@ -57,19 +59,27 @@ void OctreeNode::Subdivide()
         FVector(center.x, bounds.max.y, bounds.max.z)), depth + 1, octree);
     children[7] = new OctreeNode(FBoundingBox(center, bounds.max), depth + 1, octree);
     isLeaf = false;
+
+    octree->OctreeArray[depth + 1].Add(children[0]);
+    octree->OctreeArray[depth + 1].Add(children[1]);
+    octree->OctreeArray[depth + 1].Add(children[2]);
+    octree->OctreeArray[depth + 1].Add(children[3]);
+    octree->OctreeArray[depth + 1].Add(children[4]);
+    octree->OctreeArray[depth + 1].Add(children[5]);
+    octree->OctreeArray[depth + 1].Add(children[6]);
+    octree->OctreeArray[depth + 1].Add(children[7]);
+    octree->maxDepth = depth + 1;
 }
 
-void OctreeNode::Insert(UObject* obj)
+void OctreeNode::Insert(AStaticMeshActor* obj)
 {
+    holdObjNum++;
     if (isLeaf)
     {
-        
         objects.push_back(obj);
-        octree->objectCount = octree->objectCount + 1;
         if (objects.size() > MAX_OBJECTS && depth < MAX_DEPTH)
         {
             Subdivide();
-            octree->objectCount = octree->objectCount - 1;
             // 리프에 있던 객체들을 자식 노드로 재분배
             for (auto it = objects.begin(); it != objects.end(); )
             {
@@ -102,13 +112,12 @@ void OctreeNode::Insert(UObject* obj)
             }
         }
         if (!inserted) {
-            octree->objectCount = octree->objectCount + 1;
             objects.push_back(obj);
         }
     }
 }
 
-void OctreeNode::RayCast(const FVector& rayOrigin, const FVector& rayDirection, std::vector<UObject*>& results)
+void OctreeNode::RayCast(const FVector& rayOrigin, const FVector& rayDirection, std::vector<AStaticMeshActor*>& results)
 {
     float distance;
     if (!bounds.Intersect(rayOrigin, rayDirection, distance))
@@ -135,7 +144,7 @@ void OctreeNode::RayCast(const FVector& rayOrigin, const FVector& rayDirection, 
 }
 
 
-void OctreeNode::FrustumCull(const FFrustum& frustum, std::vector<UObject*>& visibleObjects)
+void OctreeNode::FrustumCull(const FFrustum& frustum, std::vector<AStaticMeshActor*>& visibleObjects)
 {
     if (!frustum.IntersectsBox(bounds))
         return;
@@ -172,4 +181,78 @@ void OctreeNode::UpdateObjDepthBoundingBox(int inDepth)
                 children[i]->UpdateObjDepthBoundingBox(inDepth);
         }
     }
+}
+
+void OctreeNode::GenerateBatches()
+{
+    TArray<AStaticMeshActor*> meshArray =  GetObjectsIncludeChildren();
+        
+    // Original OBJ를 만드는 함수
+    OriginalOBJBatchIndex = FSceneMgr::BuildStaticBatches(meshArray);
+
+    // LOD 1 OBJ를 만드는 함수
+    LOD1OBJBatchIndex = FSceneMgr::BuildStaticBatches(meshArray);
+
+    // LOD 2 OBJ를 만드는 함수
+    LOD2OBJBatchIndex = FSceneMgr::BuildStaticBatches(meshArray);
+
+}
+
+TArray<AStaticMeshActor*> OctreeNode::GetObjectsIncludeChildren()
+{
+    TArray<AStaticMeshActor*> objArray;
+    for (auto& obj : objects) {
+        objArray.Add(obj);
+    }
+    TArray<AStaticMeshActor*> temp;
+    
+    if (!isLeaf) {
+        for (int i = 0; i < 8; i++)
+        {
+            temp = children[i]->GetObjectsIncludeChildren();
+            for (auto& t : temp) {
+                objArray.Add(t);
+            }
+            temp.Empty();
+        }
+    }
+    return objArray;
+}
+
+int OctreeNode::GiveOBJBatchIndex(const FVector& cameraPosition, int MaterialNum, int LODLevel)
+{
+    FVector nodePosition = (bounds.max + bounds.min) * 0.5f;
+    float dist = nodePosition.Distance(cameraPosition);
+
+    if (OriginalOBJBatchIndex != -1 && LODLevel == 0) {
+        // cameraPositin이 충분히 가깝다면
+        // Batch 그리는에 한테 내 OriginalOBJBatchIndex 주면서 Draw하라고 요청
+        if (dist > OriginalLength) {
+            return OriginalOBJBatchIndex;
+        }
+        else {
+            return -1;
+        }
+    }
+    if (LOD1OBJBatchIndex != -1 && LODLevel == 1) {
+        // cameraPositin이 충분히 가깝다면
+        if (dist > LOD1Length) {
+            return LOD1OBJBatchIndex;
+        }
+        else {
+            return -1;
+        }
+    }
+
+    if (LOD2OBJBatchIndex != -1 && LODLevel == 2) {
+        // cameraPositin이 충분히 가깝다면
+        if (dist > LOD2Length) {
+            return LOD2OBJBatchIndex;
+        }
+        else {
+            return -1;
+        }
+    }
+
+    return -1;
 }

@@ -2,10 +2,12 @@
 #include "OctreeNode.h"
 #include "Runtime/Launch/Define.h"
 #include "Runtime/CoreUObject/UObject/Object.h"
+#include "Classes/Engine/StaticMeshActor.h"
 
 Octree::Octree(const FBoundingBox& bounds)
 {
     root = new OctreeNode(bounds, 0, this);
+    OctreeArray[0].Add(root);
 }
 
 Octree::Octree()
@@ -35,7 +37,7 @@ void Octree::GiveOctreePadding(float padding)
     root->bounds.max.z += padding;
 }
 
-void Octree::Insert(UObject* obj)
+void Octree::Insert(AStaticMeshActor* obj)
 {
     if (root->Contains(obj->boundingBox))
     {
@@ -47,16 +49,16 @@ void Octree::Insert(UObject* obj)
     }
 }
 
-std::vector<UObject*> Octree::RayCast(const FVector& rayOrigin, const FVector& rayDirection)
+std::vector<AStaticMeshActor*> Octree::RayCast(const FVector& rayOrigin, const FVector& rayDirection)
 {
-    std::vector<UObject*> results;
+    std::vector<AStaticMeshActor*> results;
     root->RayCast(rayOrigin, rayDirection, results);
     return results;
 }
 
-std::vector<UObject*> Octree::FrustumCull(const FFrustum& frustum)
+std::vector<AStaticMeshActor*> Octree::FrustumCull(const FFrustum& frustum)
 {
-    std::vector<UObject*> visibleObjects;
+    std::vector<AStaticMeshActor*> visibleObjects;
     root->FrustumCull(frustum, visibleObjects);
     return visibleObjects;
 }
@@ -65,3 +67,23 @@ void Octree::UpdateObjDepthBoundingBox(int inDepth)
 {
     root->UpdateObjDepthBoundingBox(inDepth);
 }
+
+void Octree::GenerateBatches(int depth)
+{
+    generatedDepth = depth;
+    for (auto& node : OctreeArray[generatedDepth])
+    {
+        node->GenerateBatches();
+    }
+}
+
+void Octree::GenerateBatches()
+{
+    generatedDepth = maxDepth - 2;
+    if (generatedDepth < 0) generatedDepth = 0;
+    for (auto& node : OctreeArray[generatedDepth])
+    {
+        node->GenerateBatches();
+    }
+}
+

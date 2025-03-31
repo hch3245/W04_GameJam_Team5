@@ -94,7 +94,7 @@ void AEditorPlayer::Input()
 
                 StatPanel::GetInstance().BeginStat("PickingTime");
 
-                std::vector<UObject*> pickedObjects = world->GetOctree()->RayCast(pickRayOrigin, rayDirection);
+                std::vector<AStaticMeshActor*> pickedObjects = world->GetOctree()->RayCast(pickRayOrigin, rayDirection);
 
                 // TODO: 최적화 위해 아래 코드들 제거 필요
                 
@@ -332,7 +332,7 @@ bool AEditorPlayer::PickActor(const FVector& pickPosition)
         return false;
 }
 
-bool AEditorPlayer::PickActorFromActors(const FVector& pickPosition, std::vector<UObject*> pickTestActors)
+bool AEditorPlayer::PickActorFromActors(const FVector& pickPosition, std::vector<AStaticMeshActor*> pickTestActors)
 {
     AActor* Possible = nullptr;
     int maxIntersect = 0;
@@ -343,7 +343,7 @@ bool AEditorPlayer::PickActorFromActors(const FVector& pickPosition, std::vector
     {
         if (iter->IsA<AStaticMeshActor>())
         {
-            pickTestActor = static_cast<AStaticMeshActor*>(iter);
+            pickTestActor = iter;
             float Distance = 0.0f;
             int currentIntersectCount = 0;
             if (RayIntersectsObject(pickPosition, pickTestActor->GetStaticMeshComponent(), Distance, currentIntersectCount))

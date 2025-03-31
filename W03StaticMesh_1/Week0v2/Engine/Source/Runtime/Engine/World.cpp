@@ -168,7 +168,7 @@ void UWorld::CreateOctree()
     MakeOctree(FVector(FLT_MAX, FLT_MAX, FLT_MAX), FVector(-FLT_MAX, -FLT_MAX, -FLT_MAX));
 }
 
-void UWorld::AddOctreeObject(UObject* OctreeObject)
+void UWorld::AddOctreeObject(AStaticMeshActor* OctreeObject)
 {
     OctreeObjects.Add(OctreeObject);
     if (worldOctree->root->bounds.min.x > OctreeObject->boundingBox.min.x)

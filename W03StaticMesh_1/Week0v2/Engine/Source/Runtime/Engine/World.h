@@ -13,6 +13,7 @@ class AEditorPlayer;
 class USceneComponent;
 class UTransformGizmo;
 class Octree;
+class AStaticMeshActor;
 
 class UWorld : public UObject
 {
@@ -55,7 +56,7 @@ private:
     AEditorPlayer* EditorPlayer = nullptr;
 
     Octree* worldOctree = nullptr;
-    TArray<UObject*> OctreeObjects;
+    TArray<AStaticMeshActor*> OctreeObjects;
 
 public:
     UObject* worldGizmo = nullptr;
@@ -69,7 +70,7 @@ public:
     Octree* GetOctree() const { return worldOctree; }
     void MakeOctree(FVector boundMin, FVector boundMax);
     void CreateOctree();
-    void AddOctreeObject(UObject* OctreeObject);
+    void AddOctreeObject(AStaticMeshActor* OctreeObject);
     void UpdateOctreeFromOctreeobjects();
 
     // EditorManager 같은데로 보내기

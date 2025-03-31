@@ -6,6 +6,7 @@ class UGizmoBaseComponent;
 class UGizmoArrowComponent;
 class USceneComponent;
 class UPrimitiveComponent;
+class AStaticMeshActor;
 
 class AEditorPlayer : public AActor
 {
@@ -18,7 +19,7 @@ class AEditorPlayer : public AActor
     void Input();
     bool PickGizmo(FVector& rayOrigin);
     bool PickActor(const FVector& pickPosition);
-    bool PickActorFromActors(const FVector& pickPosition, std::vector<UObject*> pickTestActors);
+    bool PickActorFromActors(const FVector& pickPosition, std::vector<AStaticMeshActor*> pickTestActors);
     void AddControlMode();
     void AddCoordiMode();
 
