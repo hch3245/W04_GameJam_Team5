@@ -372,6 +372,7 @@ bool AEditorPlayer::PickActorFromActors(const FVector& pickPosition, std::vector
     if (Possible)
     {
         GetWorld()->SetPickedActor(Possible);
+        UPrimitiveBatch::GetInstance().SetSelectedObjBox(Possible->boundingBox);
         return true;
     }
     else

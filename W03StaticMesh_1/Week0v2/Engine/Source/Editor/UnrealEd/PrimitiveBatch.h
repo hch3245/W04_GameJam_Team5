@@ -37,6 +37,8 @@ public:
     void AddOctreeDepthObj(const FBoundingBox& worldAABB, int inDepth);
     void ClearOctreeDepth();
 
+    void SetSelectedObjBox(const FBoundingBox& worldAABB);
+
     bool GetShowConsistentBoundBoxes() { return bShowConsistentBoundBoxes; }
     void SetShowConsistentBoundBoxes(bool showConsistentBoundBoxes);
     bool GetShowOctreeBoundBoxes() { return bShowOctreeBoundBoxes; }
@@ -84,6 +86,9 @@ private:
     TArray<FBoundingBox> OctreeRayDetectBoundBoxes[8];
 
     TArray<FBoundingBox> OctreeDepthObjBoundBoxes[8];
+    
+    FBoundingBox SelectedObjBox;
+    bool bShowSelectedObjBox = false;
 
 
     bool bShowOctreeBoundBoxes;
