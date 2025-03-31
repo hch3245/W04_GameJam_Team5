@@ -59,6 +59,7 @@ std::vector<UObject*> Octree::FrustumCull(const FFrustum& frustum)
     std::vector<UObject*> visibleObjects;
     root->FrustumCull(frustum, visibleObjects);
     return visibleObjects;
+}
 
 void Octree::UpdateObjDepthBoundingBox(int inDepth)
 {
