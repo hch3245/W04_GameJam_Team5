@@ -325,13 +325,113 @@ void FSceneMgr::SpawnActorFromSceneData(const FString& jsonStr)
     }
 }
 
-void FSceneMgr::BuildStaticBatches()
-{
-    CachedRenderData.Empty(); // 기존 데이터 클리어
+//void FSceneMgr::BuildStaticBatches()
+//{
+//    CachedRenderData.Empty(); // 기존 데이터 클리어
+//
+//    // [1] 메시를 머티리얼별로 그룹화 (서브메시 없음)
+//    TMap<UMaterial*, TArray<UStaticMeshComponent*>> MaterialGroups;
+//    for (AStaticMeshActor* Actor : StaticMeshes)
+//    {
+//        UStaticMeshComponent* MeshComp = Actor->GetStaticMeshComponent();
+//        if (!MeshComp || !MeshComp->GetStaticMesh())
+//            continue;
+//
+//        // 메시의 모든 머티리얼을 그룹에 추가
+//        TArray<FStaticMaterial*> MeshMaterials = MeshComp->GetStaticMesh()->GetMaterials();
+//        for (FStaticMaterial* MatSlot : MeshMaterials)
+//        {
+//            UMaterial* Mat = MatSlot->Material;
+//            MaterialGroups.FindOrAdd(Mat).Add(MeshComp);
+//        }
+//    }
+//
+//    const int ChunkSize = 100;
+//
+//    // [2] 머티리얼별로 직접 CachedRenderData 생성
+//    for (auto& Pair : MaterialGroups)
+//    {
+//        UMaterial* Mat = Pair.Key;
+//        TArray<UStaticMeshComponent*>& MeshGroup = Pair.Value;
+//        int GroupCount = MeshGroup.Num();
+//
+//        // 청크 단위 처리
+//        for (int i = 0; i < GroupCount; i += ChunkSize)
+//        {
+//            OBJ::FStaticMeshRenderData* pRenderData = new OBJ::FStaticMeshRenderData();
+//            pRenderData->Materials.Add(Mat->GetMaterialInfo()); // 머티리얼 정보 저장
+//
+//            uint32 VertexOffset = 0;
+//            int EndIndex = FMath::Min(i + ChunkSize, GroupCount);
+//
+//            // 각 청크 내 메시 병합
+//            for (int j = i; j < EndIndex; ++j)
+//            {
+//                UStaticMeshComponent* MeshComp = MeshGroup[j];
+//                if (!MeshComp || !MeshComp->GetStaticMesh())
+//                    continue;
+//
+//                OBJ::FStaticMeshRenderData* SourceData = MeshComp->GetStaticMesh()->GetRenderData();
+//                if (!SourceData)
+//                    continue;
+//
+//                // 월드 변환 적용
+//                FMatrix Model = JungleMath::CreateModelMatrix(
+//                    MeshComp->GetWorldLocation(),
+//                    MeshComp->GetWorldRotation(),
+//                    MeshComp->GetWorldScale()
+//                );
+//
+//                // 정점 변환 및 병합
+//                TArray<FVertexSimple> TransformedVertices = BakeTransform(SourceData->Vertices, Model);
+//                pRenderData->Vertices + TransformedVertices;
+//
+//                // 인덱스 오프셋 적용
+//                for (uint32 idx : SourceData->Indices)
+//                {
+//                    pRenderData->Indices.Add(idx + VertexOffset);
+//                }
+//                VertexOffset += TransformedVertices.Num();
+//            }
+//
+//            // 서브셋 설정 (전체를 하나의 서브셋으로 처리)
+//            FMaterialSubset Subset;
+//            Subset.MaterialIndex = 0; // 단일 머티리얼
+//            Subset.IndexStart = 0;
+//            Subset.IndexCount = pRenderData->Indices.Num();
+//            pRenderData->MaterialSubsets.Add(Subset);
+//
+//            // GPU 버퍼 생성
+//            if (pRenderData->Vertices.Num() > 0)
+//            {
+//                pRenderData->VertexBuffer = GEngineLoop.renderer.CreateVertexBuffer(
+//                    pRenderData->Vertices,
+//                    pRenderData->Vertices.Num() * sizeof(FVertexSimple)
+//                );
+//            }
+//
+//            if (pRenderData->Indices.Num() > 0)
+//            {
+//                pRenderData->IndexBuffer = GEngineLoop.renderer.CreateIndexBuffer(
+//                    pRenderData->Indices,
+//                    pRenderData->Indices.Num() * sizeof(uint32)
+//                );
+//            }
+//
+//            //// 바운딩 박스 계산 (옵션)
+//            //pRenderData->BoundingBoxMin = CalculateBoundingBoxMin(pRenderData->Vertices);
+//            //pRenderData->BoundingBoxMax = CalculateBoundingBoxMax(pRenderData->Vertices);
+//
+//            CachedRenderData.Add(pRenderData); // 직접 추가
+//        }
+//    }
+//}
 
+int FSceneMgr::BuildStaticBatches(TArray<AStaticMeshActor*> InStaticMeshes)
+{
     // [1] 메시를 머티리얼별로 그룹화 (서브메시 없음)
     TMap<UMaterial*, TArray<UStaticMeshComponent*>> MaterialGroups;
-    for (AStaticMeshActor* Actor : StaticMeshes)
+    for (AStaticMeshActor* Actor : InStaticMeshes)
     {
         UStaticMeshComponent* MeshComp = Actor->GetStaticMeshComponent();
         if (!MeshComp || !MeshComp->GetStaticMesh())
@@ -345,86 +445,84 @@ void FSceneMgr::BuildStaticBatches()
             MaterialGroups.FindOrAdd(Mat).Add(MeshComp);
         }
     }
-
-    const int ChunkSize = 100;
-
-    // [2] 머티리얼별로 직접 CachedRenderData 생성
+    // [2] 머티리얼별로 CachedRenderData를 직접 생성 (청크 단위 제거)
     for (auto& Pair : MaterialGroups)
     {
         UMaterial* Mat = Pair.Key;
         TArray<UStaticMeshComponent*>& MeshGroup = Pair.Value;
         int GroupCount = MeshGroup.Num();
 
-        // 청크 단위 처리
-        for (int i = 0; i < GroupCount; i += ChunkSize)
+        // 하나의 배치로 전체 그룹을 병합합니다.
+        OBJ::FStaticMeshRenderData* pRenderData = new OBJ::FStaticMeshRenderData();
+        pRenderData->Materials.Add(Mat->GetMaterialInfo()); // 머티리얼 정보 저장
+
+        uint32 VertexOffset = 0;
+        for (int j = 0; j < GroupCount; ++j)
         {
-            OBJ::FStaticMeshRenderData* pRenderData = new OBJ::FStaticMeshRenderData();
-            pRenderData->Materials.Add(Mat->GetMaterialInfo()); // 머티리얼 정보 저장
+            UStaticMeshComponent* MeshComp = MeshGroup[j];
+            if (!MeshComp || !MeshComp->GetStaticMesh())
+                continue;
 
-            uint32 VertexOffset = 0;
-            int EndIndex = FMath::Min(i + ChunkSize, GroupCount);
+            OBJ::FStaticMeshRenderData* SourceData = MeshComp->GetStaticMesh()->GetRenderData();
+            if (!SourceData)
+                continue;
 
-            // 각 청크 내 메시 병합
-            for (int j = i; j < EndIndex; ++j)
+            // 월드 변환 적용
+            FMatrix Model = JungleMath::CreateModelMatrix(
+                MeshComp->GetWorldLocation(),
+                MeshComp->GetWorldRotation(),
+                MeshComp->GetWorldScale()
+            );
+
+            // 정점 변환 및 병합 (Append를 사용)
+            TArray<FVertexSimple> TransformedVertices = BakeTransform(SourceData->Vertices, Model);
+            pRenderData->Vertices + TransformedVertices;
+
+            // 인덱스 데이터에 오프셋 적용 후 병합
+            for (uint32 idx : SourceData->Indices)
             {
-                UStaticMeshComponent* MeshComp = MeshGroup[j];
-                if (!MeshComp || !MeshComp->GetStaticMesh())
-                    continue;
-
-                OBJ::FStaticMeshRenderData* SourceData = MeshComp->GetStaticMesh()->GetRenderData();
-                if (!SourceData)
-                    continue;
-
-                // 월드 변환 적용
-                FMatrix Model = JungleMath::CreateModelMatrix(
-                    MeshComp->GetWorldLocation(),
-                    MeshComp->GetWorldRotation(),
-                    MeshComp->GetWorldScale()
-                );
-
-                // 정점 변환 및 병합
-                TArray<FVertexSimple> TransformedVertices = BakeTransform(SourceData->Vertices, Model);
-                pRenderData->Vertices + TransformedVertices;
-
-                // 인덱스 오프셋 적용
-                for (uint32 idx : SourceData->Indices)
-                {
-                    pRenderData->Indices.Add(idx + VertexOffset);
-                }
-                VertexOffset += TransformedVertices.Num();
+                pRenderData->Indices.Add(idx + VertexOffset);
             }
-
-            // 서브셋 설정 (전체를 하나의 서브셋으로 처리)
-            FMaterialSubset Subset;
-            Subset.MaterialIndex = 0; // 단일 머티리얼
-            Subset.IndexStart = 0;
-            Subset.IndexCount = pRenderData->Indices.Num();
-            pRenderData->MaterialSubsets.Add(Subset);
-
-            // GPU 버퍼 생성
-            if (pRenderData->Vertices.Num() > 0)
-            {
-                pRenderData->VertexBuffer = GEngineLoop.renderer.CreateVertexBuffer(
-                    pRenderData->Vertices,
-                    pRenderData->Vertices.Num() * sizeof(FVertexSimple)
-                );
-            }
-
-            if (pRenderData->Indices.Num() > 0)
-            {
-                pRenderData->IndexBuffer = GEngineLoop.renderer.CreateIndexBuffer(
-                    pRenderData->Indices,
-                    pRenderData->Indices.Num() * sizeof(uint32)
-                );
-            }
-
-            //// 바운딩 박스 계산 (옵션)
-            //pRenderData->BoundingBoxMin = CalculateBoundingBoxMin(pRenderData->Vertices);
-            //pRenderData->BoundingBoxMax = CalculateBoundingBoxMax(pRenderData->Vertices);
-
-            CachedRenderData.Add(pRenderData); // 직접 추가
+            VertexOffset += TransformedVertices.Num();
         }
+
+        // MaterialSubsets 설정: 전체 배치 데이터를 하나의 subset으로 처리
+        FMaterialSubset Subset;
+        Subset.MaterialIndex = 0; // 단일 머티리얼 사용
+        Subset.IndexStart = 0;
+        Subset.IndexCount = pRenderData->Indices.Num();
+        pRenderData->MaterialSubsets.Add(Subset);
+
+        // GPU 버퍼 생성
+        uint32 vertCount = pRenderData->Vertices.Num();
+        if (vertCount > 0)
+        {
+            pRenderData->VertexBuffer = GEngineLoop.renderer.CreateVertexBuffer(
+                pRenderData->Vertices,
+                vertCount * sizeof(FVertexSimple)
+            );
+        }
+        else
+        {
+            pRenderData->VertexBuffer = nullptr;
+        }
+
+        uint32 indexCount = pRenderData->Indices.Num();
+        if (indexCount > 0)
+        {
+            pRenderData->IndexBuffer = GEngineLoop.renderer.CreateIndexBuffer(
+                pRenderData->Indices,
+                indexCount * sizeof(uint32)
+            );
+        }
+        else
+        {
+            pRenderData->IndexBuffer = nullptr;
+        }
+        CachedRenderData.Add(pRenderData);
     }
+    // 시작되는 Index 반환, +1하면 초록색(or 빨간색 일단 모르지만 규칙적으로 들어감)
+    return CachedRenderData.Len() - 2;
 }
 
 TArray<FVertexSimple> FSceneMgr::BakeTransform(const TArray<FVertexSimple>& sourceVertices, const FMatrix& transform)
