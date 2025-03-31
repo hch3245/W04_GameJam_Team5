@@ -2,9 +2,9 @@
 cbuffer MatrixConstants : register(b0)
 {
     row_major float4x4 MVP;
-    row_major float4x4 MInverseTranspose;
-    float4 UUID;
-    bool isSelected;
+    //row_major float4x4 MInverseTranspose;
+    //float4 UUID;
+    //bool isSelected;
 };
 
 struct VS_INPUT
@@ -32,8 +32,8 @@ PS_INPUT mainVS(VS_INPUT input)
     // 위치 변환
     output.position = mul(input.position, MVP);
     output.color = input.color;
-    float selectionFactor = isSelected ? 0.5 : 1.0;
-    output.color *= selectionFactor;
+    //float selectionFactor = isSelected ? 0.5 : 1.0;
+    //output.color *= selectionFactor;
     // 입력 normal 값의 길이 확인
     float normalThreshold = 0.001;
     float normalSqLen = dot(input.normal, input.normal);
