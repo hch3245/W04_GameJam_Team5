@@ -997,7 +997,7 @@ void FRenderer::Render(UWorld* World, std::shared_ptr<FEditorViewportClient> Act
     Graphics->ChangeRasterizer(ActiveViewport->GetViewMode());
     ChangeViewMode(ActiveViewport->GetViewMode());
     //UpdateLightBuffer();
-    //UPrimitiveBatch::GetInstance().RenderBatch(ActiveViewport->GetViewMatrix(), ActiveViewport->GetProjectionMatrix());
+    UPrimitiveBatch::GetInstance().RenderBatch(ActiveViewport->GetViewMatrix(), ActiveViewport->GetProjectionMatrix());
 
     //if (ActiveViewport->GetShowFlag() & static_cast<uint64>(EEngineShowFlags::SF_Primitives))
     //    RenderStaticMeshes(World, ActiveViewport);
@@ -1028,10 +1028,10 @@ void FRenderer::RenderStaticMeshesBatch(UWorld* World, std::shared_ptr<FEditorVi
         OBJ::FStaticMeshRenderData* pRenderData = CachedData[i];
 
         // RenderPrimitive()는 OBJ::FStaticMeshRenderData*를 인자로 받으므로 pRenderData를 그대로 전달합니다.
-        //if (DoFrustrumCull(pRenderData, ActiveViewport))
-        //{
-        //    RenderPrimitive(pRenderData, Batch.Materials, TArray<UMaterial*>(), 0);
-        //}
+        if (DoFrustrumCull(pRenderData, ActiveViewport))
+        {
+            RenderPrimitive(pRenderData, Batch.Materials, TArray<UMaterial*>(), 0);
+        }
     }
 }
 

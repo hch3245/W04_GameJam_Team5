@@ -71,11 +71,10 @@ void AEditorPlayer::Input()
 
             const auto& ActiveViewport = GetEngine().GetLevelEditor()->GetActiveViewportClient();
             ScreenToViewSpace(mousePos.x, mousePos.y, ActiveViewport->GetViewMatrix(), ActiveViewport->GetProjectionMatrix(), pickPosition);
-            /*bool res = PickGizmo(pickPosition);*/
-            bool res = false;
+            bool res = PickGizmo(pickPosition);
             if (!res)
             {
-                FMatrix viewMatrix = GEngineLoop.GetLevelEditor()->GetActiveViewportClient()->GetViewMatrix();
+                FMatrix viewMatrix = ActiveViewport->GetViewMatrix();
                 
                 
                 DirectX::XMMATRIX xm = XMMatrixSet(
@@ -97,9 +96,18 @@ void AEditorPlayer::Input()
                     _mm_loadu_ps(temp.m[3])
                 );
 
-                FVector pickRayOrigin = GEngineLoop.GetLevelEditor()->GetActiveViewportClient()->ViewTransformPerspective.ViewLocation;
+                FMatrix hgInverseMatrix = FMatrix::Inverse(viewMatrix);
+                FVector cameraOrigin = { 0,0,0 };
+                FVector realpickRayOrigin = GEngineLoop.GetLevelEditor()->GetActiveViewportClient()->ViewTransformPerspective.ViewLocation;
+                FVector pickRayOrigin = inverseMatrix.TransformPosition(cameraOrigin);
                 FVector transformedPick = inverseMatrix.TransformPosition(pickPosition);
-                FVector rayDirection =(transformedPick - pickRayOrigin).Normalize();
+                FVector rayDirection = (transformedPick - pickRayOrigin).Normalize();
+
+                FVector hgpickRayOrigin = hgInverseMatrix.TransformPosition(cameraOrigin);
+                FVector hgtransformedPick = hgInverseMatrix.TransformPosition(pickPosition);
+                FVector hgrayDirection =(hgtransformedPick - hgpickRayOrigin).Normalize();
+
+                
 
                 // TODO: 최적화 위해 아래 코드들 제거 필요
                 UPrimitiveBatch::GetInstance().ClearOctreeRayDetectAABB();
