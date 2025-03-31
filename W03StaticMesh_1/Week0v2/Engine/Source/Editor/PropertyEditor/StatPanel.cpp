@@ -42,21 +42,6 @@ void StatPanel::Draw()
             ImGui::Text("Picking Time(Avg): %.3f ms", GetStat("PickingTime")->AverageTime);
             ImGui::Text("Accumulated Time: %.3f ms", GetStat("PickingTime")->AccumulatedTime);
         }
-
-        if (GetStat("A")) {
-            ImGui::Text("A: %.3f ms", GetStat("A")->LastTime);
-            ImGui::Text("A(Avg): %.3f ms", GetStat("A")->AverageTime);
-        }
-
-        if (GetStat("B")) {
-            ImGui::Text("B: %.3f ms", GetStat("B")->LastTime);
-            ImGui::Text("B(Avg): %.3f ms", GetStat("B")->AverageTime);
-        }
-
-        if (GetStat("C")) {
-            ImGui::Text("C: %d times", GetStat("C")->CallCount);
-            ImGui::Text("C(Avg): %.3f ms", GetStat("C")->AverageTime);
-        }
     }
     ImGui::End();
 }
