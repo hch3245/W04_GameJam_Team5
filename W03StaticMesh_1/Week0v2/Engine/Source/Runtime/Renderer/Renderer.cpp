@@ -1066,7 +1066,7 @@ void FRenderer::RenderStaticMeshesBatch(UWorld* World, std::shared_ptr<FEditorVi
     // Red 사과, LOD 0 그리기
     for (auto& octreeNode : OctreeArray) 
     {
-        drawIndexes.Add(octreeNode->GiveOBJBatchIndex(CameraPosition, 0, 0));
+        octreeNode->GiveOBJBatchIndex(CameraPosition, 0, 0, drawIndexes);
     }
     
     for (auto& drawIndex : drawIndexes) 
@@ -1083,41 +1083,11 @@ void FRenderer::RenderStaticMeshesBatch(UWorld* World, std::shared_ptr<FEditorVi
     drawIndexes.Empty();
     needMaterialSet = true;
 
-    //Red 사과, LOD 1 그리기
-    for (auto& octreeNode : OctreeArray)
-    {
-        drawIndexes.Add(octreeNode->GiveOBJBatchIndex(CameraPosition, 0, 1));
-    }
-
-    for (auto& drawIndex : drawIndexes)
-    {
-        if (drawIndex == -1) continue;
-        OBJ::FStaticMeshRenderData* pRenderData = CachedData[drawIndex];
-        RenderPrimitive(pRenderData);
-    }
-
-    drawIndexes.Empty();
-
-    //Red 사과, LOD 2 그리기
-    for (auto& octreeNode : OctreeArray)
-    {
-        drawIndexes.Add(octreeNode->GiveOBJBatchIndex(CameraPosition, 0, 2));
-    }
-
-    for (auto& drawIndex : drawIndexes)
-    {
-        if (drawIndex == -1) continue;
-        OBJ::FStaticMeshRenderData* pRenderData = CachedData[drawIndex];
-        RenderPrimitive(pRenderData);
-    }
-
-    drawIndexes.Empty();
-
 
     // No Red 사과, LOD 0 그리기
     for (auto& octreeNode : OctreeArray)
     {
-        drawIndexes.Add(octreeNode->GiveOBJBatchIndex(CameraPosition, 1, 0));
+        octreeNode->GiveOBJBatchIndex(CameraPosition, 1, 0, drawIndexes);
     }
 
     for (auto& drawIndex : drawIndexes)
@@ -1133,36 +1103,6 @@ void FRenderer::RenderStaticMeshesBatch(UWorld* World, std::shared_ptr<FEditorVi
 
     drawIndexes.Empty();
     needMaterialSet = true;
-
-    // No Red 사과, LOD 1 그리기
-    for (auto& octreeNode : OctreeArray)
-    {
-        drawIndexes.Add(octreeNode->GiveOBJBatchIndex(CameraPosition, 1, 1));
-    }
-
-    for (auto& drawIndex : drawIndexes)
-    {
-        if (drawIndex == -1) continue;
-        OBJ::FStaticMeshRenderData* pRenderData = CachedData[drawIndex];
-        RenderPrimitive(pRenderData);
-    }
-
-    drawIndexes.Empty();
-
-    //Red 사과, LOD 2 그리기
-    for (auto& octreeNode : OctreeArray)
-    {
-        drawIndexes.Add(octreeNode->GiveOBJBatchIndex(CameraPosition, 1, 2));
-    }
-
-    for (auto& drawIndex : drawIndexes)
-    {
-        if (drawIndex == -1) continue;
-        OBJ::FStaticMeshRenderData* pRenderData = CachedData[drawIndex];
-        RenderPrimitive(pRenderData);
-    }
-
-    drawIndexes.Empty();
 
 }
 

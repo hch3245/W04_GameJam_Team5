@@ -49,5 +49,5 @@ public:
 
     TArray<AStaticMeshActor*> GetObjectsIncludeChildren();
 
-    int GiveOBJBatchIndex(const FVector& cameraPosition, int MaterialNum, int LODLevel);
+    void GiveOBJBatchIndex(const FVector& cameraPosition, int MaterialNum, int LODLevel, TArray<int>& drawIndexes);
 };
