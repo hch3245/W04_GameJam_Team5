@@ -57,13 +57,13 @@ void AEditorPlayer::Input()
             //TStatId StatId;
             //FScopeCycleCounter pickCounter(StatId);  // 성능 추적 시작
 
-            /*for ( const auto obj : TObjectRange<USceneComponent>())
-            {
-                if (obj->GetUUID() != UUID) continue;
+            //for ( const auto obj : TObjectRange<USceneComponent>())
+            //{
+            //    if (obj->GetUUID() != UUID) continue;
 
-                UE_LOG(LogLevel::Display, *obj->GetName());
-            }
-            ScreenToClient(GetEngine().hWnd, &mousePos);*/
+            //    UE_LOG(LogLevel::Display, *obj->GetName());
+            //}
+            ScreenToClient(GetEngine().hWnd, &mousePos);
 
             FVector pickPosition;
 
