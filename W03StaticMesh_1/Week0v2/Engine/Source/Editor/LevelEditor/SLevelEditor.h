@@ -1,10 +1,12 @@
 #pragma once
 #include "Define.h"
 #include "Container/Map.h"
+
 class SSplitterH;
 class SSplitterV;
 class UWorld;
 class FEditorViewportClient;
+
 class SLevelEditor
 {
 public:

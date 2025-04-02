@@ -425,7 +425,8 @@
     <ClInclude Include="Engine\Source\Editor\PropertyEditor\StatPanel.h" />
     <ClInclude Include="Engine\Source\Runtime\Core\Math\Octree.h" />
     <ClInclude Include="Engine\Source\Runtime\Core\Math\OctreeNode.h" />
-    <ClInclude Include="Engine\Source\Runtime\Core\Math\Frustrum.h" />
+    <ClInclude Include="Engine\Source\Runtime\Core\Math\Frustum.h" />
+    <ClInclude Include="Engine\Source\Runtime\Engine\Level.h" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Engine\Source\ThirdParty\DirectXTK\Include\DDSTextureLoader.h" />
@@ -519,6 +520,7 @@
     <ClCompile Include="Engine\Source\Runtime\WindowsPlatformTime.cpp" />
     <ClCompile Include="Engine\Source\Runtime\Core\Math\Octree.cpp" />
     <ClCompile Include="Engine\Source\Runtime\Core\Math\OctreeNode.cpp" />
-    <ClCompile Include="Engine\Source\Runtime\Core\Math\Frustrum.cpp" />
+    <ClCompile Include="Engine\Source\Runtime\Core\Math\Frustum.cpp" />
+    <ClCompile Include="Engine\Source\Runtime\Engine\Level.cpp" />
   </ItemGroup>
 </Project>

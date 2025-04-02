@@ -237,6 +237,7 @@
     <ClCompile Include="Engine\Source\ThirdParty\tinyfiledialogs\tinyfiledialogs.cpp" />
     <ClCompile Include="Engine\Source\Editor\PropertyEditor\StatPanel.cpp" />
     <ClCompile Include="Engine\Source\Runtime\Core\Math\Frustum.cpp" />
+    <ClCompile Include="Engine\Source\Runtime\Engine\Level.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Engine\Source\Runtime\Core\Delegates\Delegate.h" />
@@ -349,6 +350,7 @@
     <ClInclude Include="Engine\Source\Runtime\Engine\World.h" />
     <ClInclude Include="Engine\Source\Editor\PropertyEditor\StatPanel.h" />
     <ClInclude Include="Engine\Source\Runtime\Core\Math\Frustum.h" />
+    <ClInclude Include="Engine\Source\Runtime\Engine\Level.h" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\StaticMeshPixelShader.hlsl">

@@ -7,6 +7,7 @@
 class FObjectFactory;
 class AActor;
 class UObject;
+class ULevel;
 class UGizmoArrowComponent;
 class UCameraComponent;
 class AEditorPlayer;
@@ -14,12 +15,23 @@ class USceneComponent;
 class UTransformGizmo;
 class Octree;
 
+enum EWorldType
+{
+    Editor,
+    EditorPreview,
+    PIE,
+    Game,
+};
+
 class UWorld : public UObject
 {
     DECLARE_CLASS(UWorld, UObject)
 
 public:
     UWorld() = default;
+
+    ULevel* Level;
+    EWorldType WorldType;
 
     void Initialize();
     void CreateBaseObject();
