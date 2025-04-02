@@ -23,6 +23,9 @@ public:
     static FString LoadSceneFromFile(const FString& filename);
     static std::string SerializeSceneData(const SceneData& sceneData);
     static bool SaveSceneToFile(const FString& filename, const SceneData& sceneData);
+    static void BuildDynamicBatches(const std::vector<UObject*>& visibleObjects);
+    static void SortByProximity(FVector ReferencePoint, TArray<UStaticMeshComponent*>& MeshGroup);
+    static void CreateGPUBuffers();
 
     static const TArray<OBJ::FStaticMeshRenderData*>& GetCachedRenderData() { return CachedRenderData; }
     inline static TArray<AStaticMeshActor*> StaticMeshes;
